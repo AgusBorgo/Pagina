@@ -2,32 +2,35 @@
 <html lang="en" class="h-100">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />  <!-- Esto hace al sitio Responsive --> 
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - BORGO</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/PaginaWeb.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/bootstrap.min.css" asp-append-version="true" />
-
     <script src="https://kit.fontawesome.com/4b5aae3091.js" crossorigin="anonymous"></script>
 
+    <style>
+        html, body {
+            height: 100%;
+        }
+    </style>
 </head>
-<body class="d-flex flex-column h-100">
+<body class="d-flex flex-column min-vh-100">
 
-	@await Html.PartialAsync("_Header")
+    @await Html.PartialAsync("_Header")
 
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+    <main role="main" class="flex-grow-1 container pb-3">
+        @RenderBody()
+    </main>
 
     <footer class="footer mt-auto border-top bg-light text-center text-muted py-3">
         <div class="container">
             &copy; 2025 - BORGO - <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-muted">Privacy</a>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
@@ -35,3 +38,5 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+
+

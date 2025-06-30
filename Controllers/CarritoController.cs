@@ -43,7 +43,7 @@ namespace PaginaWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ActualizarContenido(int productoId, int cantidad)
+        public async Task<IActionResult> ActualizarCantidad(int productoId, int cantidad)
         {
             var carritoViewModel = await GetCarritoViewModelAsync();
             var carritoItem = carritoViewModel.Items.FirstOrDefault(i => i.ProductoId == productoId);

@@ -1,8 +1,11 @@
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using PaginaWeb.Context;
 using PaginaWeb.Models;
+using PaginaWeb.Models.ViewModel;
 using PaginaWeb.Services;
 
 namespace PaginaWeb.Controllers
@@ -105,6 +108,36 @@ namespace PaginaWeb.Controllers
         public IActionResult Privacy()
         {
             return View();
+        }
+
+        
+        private async Task<CarritoViewModel> AgregarProductoAlCarrito(int productoId, int nuevaCantidad)
+        {
+            var carrito = await GetCarritoViewModelAsync();
+
+            var itemExistente = carrito.Items.FirstOrDefault(i => i.ProductoId == productoId);
+
+            var producto = await _context.Producto.FindAsync(productoId);
+            if (producto == null || nuevaCantidad <= 0)
+                return null;
+
+            if (itemExistente != null)
+            { 
+                itemExistente.Cantidad = Math.Min(nuevaCantidad, producto.Stock);
+            }
+            else
+            {
+                carrito.Items.Add(new CarritoItemViewModel
+                {
+                    ProductoId = productoId,
+                    Cantidad = Math.Min(nuevaCantidad, producto.Stock),
+                    Precio = producto.Precio,
+                    Producto = producto
+                });
+            }
+
+            await UpdateCarritoViewModelAsync(carrito);
+            return carrito;
         }
     }
 }
