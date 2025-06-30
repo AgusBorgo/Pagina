@@ -1,0 +1,39 @@
+﻿
+@{
+    ViewData["Title"] = "Dashboard";
+}
+<h1>Dashboard</h1>
+
+<div class="container mt-4">
+	<h1 class="text-center">Bienvenido al Dashboard</h1>
+	<p class="lead">Aquí puedes gestionar tus productos y clientes.</p>
+
+	<div class="row">
+		<div class="col-md-6">
+			<h2>Productos</h2>
+			<p>Administra tus productos aquí.</p>
+			<a class="btn btn-primary" asp-controller="Productoes" asp-action="Index">Ver Productos</a>
+		</div>
+		<div class="col-md-6">
+			<h2>Clientes</h2>
+			<p>Administra tus clientes aquí.</p>
+			<a class="btn btn-primary" asp-controller="Clientes" asp-action="Index">Ver Clientes</a>
+		</div>
+		<div class="col-md-6">
+			<h2>Categorias</h2>
+			<p>Administra tus categorias aquí.</p>
+			<a class="btn btn-primary" asp-controller="Categoria" asp-action="Index">Ver Categorias</a>
+		</div>
+		<div class="col-md-6">
+			<h2>Pedidos</h2>
+			<p>Administra tus pedidos aquí.</p>
+			<a class="btn btn-primary" asp-controller="Pedidos" asp-action="Index">Ver Pedidos</a>
+		</div>
+		<div class="col-md-6">
+			<h2>Roles</h2>
+			<p>Administra tus roles aquí.</p>
+			<a class="btn btn-primary" asp-controller="Rol" asp-action="Index">Ver Roles</a>
+		</div>
+
+</div>
+
