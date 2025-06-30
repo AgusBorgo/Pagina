@@ -16,6 +16,10 @@ namespace PaginaWeb.Services
             return await _context.Categoria.ToListAsync();
 
         }
-   
+
+        public Task<dynamic> GetProductosDestacados()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

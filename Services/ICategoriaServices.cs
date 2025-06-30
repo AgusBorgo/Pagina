@@ -5,5 +5,6 @@ namespace PaginaWeb.Services
     public interface ICategoriaServices
     {
         Task<List<Categoria>> GetCategorias();
+        Task<dynamic> GetProductosDestacados();
     }
 }
