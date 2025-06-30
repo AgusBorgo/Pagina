@@ -10,7 +10,7 @@ namespace PaginaWeb.Controllers
 {
     public class BaseController : Controller
     {
-        public readonly PaginaDatabaseContext _context;
+        protected readonly PaginaDatabaseContext _context;
 
         public BaseController(PaginaDatabaseContext context)
         {
@@ -19,16 +19,16 @@ namespace PaginaWeb.Controllers
 
         public override ViewResult View(string? viewName, object? model)
         {
-            @ViewBag.NumeroProductos = GetCarritoCount();
+            ViewBag.NumeroProductos = GetCarritoCount();
             return base.View(viewName, model);
         }
 
         protected int GetCarritoCount()
         {
-            var count = 0;
-
+            int count = 0;
             string? carritoJson = Request.Cookies["Carrito"];
-            if (carritoJson != null)
+
+            if (!string.IsNullOrEmpty(carritoJson))
             {
                 var carrito = JsonConvert.DeserializeObject<List<ProductoIdAndCantidad>>(carritoJson);
                 if (carrito != null)
@@ -63,12 +63,13 @@ namespace PaginaWeb.Controllers
                         Precio = producto.Precio
                     });
                 }
-                carritoViewModel.Total += producto.Precio * cantidad;
+
+                carritoViewModel.Total = carritoViewModel.Items.Sum(i => i.Precio * i.Cantidad);
                 await UpdateCarritoViewModelAsync(carritoViewModel);
                 return carritoViewModel;
             }
 
-            // Return a default value if the product is not found  
+            // Producto no encontrado
             return new CarritoViewModel
             {
                 Items = new List<CarritoItemViewModel>(),
@@ -78,41 +79,40 @@ namespace PaginaWeb.Controllers
 
         public async Task UpdateCarritoViewModelAsync(CarritoViewModel carritoViewModel)
         {
-            var productoIds = carritoViewModel.Items.Select(
-                item => new ProductoIdAndCantidad
-                {
-                    ProductoId = item.ProductoId,
-                    Cantidad = item.Cantidad
-                }
-            ).ToList();
+            var productoIds = carritoViewModel.Items.Select(item => new ProductoIdAndCantidad
+            {
+                ProductoId = item.ProductoId,
+                Cantidad = item.Cantidad
+            }).ToList();
 
-            // Fixing CS1501, CS1003, and CS1002 by correcting the syntax for Task.Run and lambda expression  
             var carritoJson = await Task.Run(() => JsonConvert.SerializeObject(productoIds));
 
-            // Assuming the serialized JSON needs to be stored in a cookie  
-            Response.Cookies.Append("Carrito", carritoJson, new CookieOptions { 
-            Expires = DateTime.Now.AddDays(7)
+            Response.Cookies.Append("Carrito", carritoJson, new CookieOptions
+            {
+                Expires = DateTime.Now.AddDays(7)
             });
         }
 
         public async Task<CarritoViewModel> GetCarritoViewModelAsync()
         {
             var carritoJson = Request.Cookies["Carrito"];
-            
-            if(string.IsNullOrEmpty(carritoJson))
-            
-                return new CarritoViewModel();
-            var productoIdsAndCantidades = JsonConvert.DeserializeObject<List<ProductoIdAndCantidad>>(carritoJson);
-            var CarritoViewModel = new CarritoViewModel();
 
-            if(productoIdsAndCantidades != null)
+            if (string.IsNullOrEmpty(carritoJson))
+            {
+                return new CarritoViewModel();
+            }
+
+            var productoIdsAndCantidades = JsonConvert.DeserializeObject<List<ProductoIdAndCantidad>>(carritoJson);
+            var carritoViewModel = new CarritoViewModel();
+
+            if (productoIdsAndCantidades != null)
             {
                 foreach (var item in productoIdsAndCantidades)
                 {
                     var producto = await _context.Producto.FindAsync(item.ProductoId);
                     if (producto != null)
                     {
-                        CarritoViewModel.Items.Add(new CarritoItemViewModel
+                        carritoViewModel.Items.Add(new CarritoItemViewModel
                         {
                             ProductoId = item.ProductoId,
                             Cantidad = item.Cantidad,
@@ -122,9 +122,10 @@ namespace PaginaWeb.Controllers
                     }
                 }
             }
-            CarritoItemViewModel.Total=CarritoViewModel.Items.Sum(i => i.Precio * i.Cantidad);
-            return CarritoViewModel;
+
+            carritoViewModel.Total = carritoViewModel.Items.Sum(i => i.Precio * i.Cantidad);
+            return carritoViewModel;
         }
     }
-
 }
+

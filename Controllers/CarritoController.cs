@@ -1,17 +1,17 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PaginaWeb.Context;
+using System.Threading.Tasks;
+using System.Linq;
+using System;
 
 namespace PaginaWeb.Controllers
 {
     public class CarritoController : BaseController
     {
-        public CarritoController(PaginaDatabaseContext context) : base(context)
-        {
-        }
+        public CarritoController(PaginaDatabaseContext context) : base(context) { }
 
-        [AllowAnonymous] // permite acceso sin autenticación  
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             var carritoViewModel = await GetCarritoViewModelAsync();
@@ -23,27 +23,23 @@ namespace PaginaWeb.Controllers
                 {
                     item.Producto = producto;
 
-                    item.Cantidad = Math.Min(item.Cantidad, producto.Stock);
-
-                    if (item.Cantidad == 0)
+                    if (producto.Stock == 0)
                     {
-                        item.Cantidad = 1; // Asegura que la cantidad sea al menos 1  
+                        item.Cantidad = 0;
                     }
                     else
                     {
-                        item.Cantidad = 0; // Si el stock es 0, establece la cantidad a 0  
+                        item.Cantidad = Math.Min(item.Cantidad, producto.Stock);
                     }
-
-                    var procederConCompraViewModel = new Models.ViewModel.ProcederConCompraViewModel
-                    {
-                        CarritoController = carritoViewModel,
-                    };
-                    return View(procederConCompraViewModel);
                 }
             }
 
-            // Agregar un retorno predeterminado para evitar el error CS0161  
-            return View(carritoViewModel);
+            var procederConCompraViewModel = new Models.ViewModel.ProcederConCompraViewModel
+            {
+                Carrito = carritoViewModel,
+            };
+
+            return View(procederConCompraViewModel);
         }
 
         [HttpPost]
@@ -55,10 +51,14 @@ namespace PaginaWeb.Controllers
             {
                 var producto = await _context.Producto.FindAsync(productoId);
                 if (producto != null)
+                {
                     carritoItem.Cantidad = Math.Min(cantidad, producto.Stock);
+                }
+
                 await UpdateCarritoViewModelAsync(carritoViewModel);
             }
-            return RedirectToAction("Index", "Carrito");
+
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -71,6 +71,7 @@ namespace PaginaWeb.Controllers
                 carritoViewModel.Items.Remove(carritoItem);
                 await UpdateCarritoViewModelAsync(carritoViewModel);
             }
+
             return RedirectToAction("Index");
         }
 
@@ -79,10 +80,10 @@ namespace PaginaWeb.Controllers
             await RemoveCarritoViewModelAsync();
             return RedirectToAction("Index");
         }
+
         private async Task RemoveCarritoViewModelAsync()
         {
             await Task.Run(() => Response.Cookies.Delete("Carrito"));
-
         }
     }
 }

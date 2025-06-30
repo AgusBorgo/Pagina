@@ -4,7 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace PaginaWeb.Models
 {
     public class Producto
-    {
+    {   
+
         [Key]
         public int ProductoId { get; set; }
         public string Nombre { get; set; } = string.Empty;
