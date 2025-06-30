@@ -24,11 +24,12 @@ namespace PaginaWeb.Controllers
 
         public async Task<IActionResult> Index()
         {   // Para los productos destacados
+            ViewBag.Categorias = await _categoriaService.GetCategorias();
             try
             {
-                ViewBag.Categorias = await _categoriaService.GetProductosDestacados();
+                List<Producto> productosDestacados = await _categoriaService.GetProductosDestacados();
                 return View(productosDestacados);
-                return View();
+               
 
             }
             catch (Exception ex)

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using PaginaWeb.Context;
+using PaginaWeb.Services;
 
 namespace PaginaWeb
 {
@@ -32,6 +33,9 @@ options.UseSqlServer(builder.Configuration["ConnectionString:PaginaDBConnection"
                 options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always; // Asegura que la cookie solo se envíe a través de HTTPS
                 options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict; // Previene el envío de cookies en solicitudes de sitios cruzados
             });
+
+            builder.Services.AddScoped<IProductoServices, ProductoService>();
+            builder.Services.AddScoped<ICategoriaServices, CategoriaService>();
 
             // Add services to the container.   
             builder.Services.AddControllersWithViews();
