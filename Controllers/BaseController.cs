@@ -95,7 +95,7 @@ namespace PaginaWeb.Controllers
             });
         }
 
-        private async Task<CarritoViewModel> GetCarritoViewModelAsync()
+        public async Task<CarritoViewModel> GetCarritoViewModelAsync()
         {
             var carritoJson = Request.Cookies["Carrito"];
             

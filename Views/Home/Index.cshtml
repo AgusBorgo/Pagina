@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Routing
+
 @model List<Producto>
 @{
     ViewData["Title"] = "Inicio";
@@ -32,8 +33,12 @@
                     </a>
 
                     <div class="card-body">
-                        <h5 class="card-title text-center"> <a href="@Url.Action("DetalleProductos", "Home", new{ id=producto.ProductoId})"> 
-                                @producto.Nombre</a> </h5>
+                        @if (producto != null)
+                        {
+                            <h5 class="card-title text-center">
+                                <a href='@Url.Action("DetalleProducto", "Home", new { id = producto.ProductoId })'>
+                            </h5>
+                        }
                         <p class="card-text">@producto.Descripcion</p>
                     </div>
                     <ul class="list-group list-group-flush text-center">
@@ -48,11 +53,11 @@
                         } else
                         {
                             <form method="post" action="@Url.Action("AgregarProductoIndex")" class="d-flex">
-                                <input type="hidden" name="productoId" value="@producto.ProductoId" />
+                                <input type="hidden" name="id" value="@producto.ProductoId" />
                                 <input type="number" class="form-control mr-2" name="cantidad" value="1" min="1"
-                                max="@producto.Stock"></input>
-                                <button type="submit" class="btn btn-primary btn-block">
-                                    <i class="fas fa-cart-plus"></i> Agregar al carrito
+                                max="@producto.Stock" />
+                                <button type="submit" class="btn btn-outline-primary rounded-pill">
+                                    <i class="fas fa-cart-plus"></i>
                                 </button>
                             </form>
                         }
@@ -63,9 +68,9 @@
     </div>
 </div>
 @{
-    var routeData = Context.GetRouteData();
-    string? controllerName = routeData.Values["controller"] as string;
-    string? actionName = routeData.Values["action"] as string;
+    
+    string? controllerName = Context.GetRouteValue("controller") as string;
+    string? actionName = Context.GetRouteValue("action") as string;
 }
 
 <script>
