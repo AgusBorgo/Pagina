@@ -1,0 +1,59 @@
+﻿@model Cliente
+@{
+	ViewData["Title"] = "Registro";
+}
+<h2>Registro nuevo usuario</h2>
+<div class="container bg-light p-4">
+	@if(User.Identity ==null && User.Identity.IsAuthenticated)
+	{
+		<p>Ya iniciaste sesion</p>
+		<script>
+			setTimeout(function() {
+			window.location.href = '@Url.Action("Index", "Home")';
+			}, 3000);
+		</script>
+	}
+	else
+	{
+        <form asp-action="Register">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Nombre" class="control-label"></label>
+                <input asp-for="Nombre" class="form-control" />
+                <span asp-validation-for="Nombre" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Apellido" class="control-label"></label>
+                <input asp-for="Apellido" class="form-control" />
+                <span asp-validation-for="Apellido" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Email" class="control-label"></label>
+                <input asp-for="Email" type="email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Contrasena" class="control-label"></label>
+                <input asp-for="Contrasena" type="password" class="form-control" />
+                <span asp-validation-for="Contrasena" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Telefono" class="control-label"></label>
+                <input asp-for="Telefono" type="number" class="form-control" />
+                <span asp-validation-for="Telefono" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Direccion" class="control-label"></label>
+                <input asp-for="Direccion" class="form-control" />
+                <span asp-validation-for="Direccion" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary"> Registrarse </button>
+            </div>
+        </form>
+        <br />
+		<div>
+			<a asp-action="Login" class="btn btn-outline-primary">Ya tengo cuenta, iniciar sesión</a>
+		</div>
+	}
+</div>
