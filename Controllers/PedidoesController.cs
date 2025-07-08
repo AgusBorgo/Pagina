@@ -34,7 +34,7 @@ namespace PaginaWeb.Controllers
             var pedido = await _context.Pedidos
                 .Include(p => p.Usuario)
                 .Include(pedido => pedido.PedidoDetalles)
-                    .ThenInclude(pd => pd.Producto)
+                .ThenInclude(pd => pd.Producto)
                 .FirstOrDefaultAsync(m => m.PedidoId == id);
 
             if (pedido == null)

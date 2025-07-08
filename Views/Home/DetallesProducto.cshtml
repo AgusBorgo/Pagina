@@ -22,7 +22,6 @@
             <p>@Model.Descripcion</p>
             <h4>Precio: @String.Format("{0:C}", Model.Precio)</h4>
             <h5>Categoría: @Model.Categoria?.Nombre</h5>
-            <h5>Stock: @Model.Stock</h5>
 
             @if (Model.Stock < 1)
             {
@@ -34,7 +33,6 @@
             {
                 <form method="post" action="@Url.Action("AgregarProductoDetalle", "Home")" class="d-flex">
                     <input type="hidden" name="id" value="@Model.ProductoId" />
-                    <input type="number" class="form-control me-2" name="cantidad" value="1" min="1" max="@Model.Stock" />
                     <button type="submit" class="btn btn-primary btn-block">
                         <i class="fas fa-cart-plus"></i> Agregar al carrito
                     </button>
