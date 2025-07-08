@@ -91,7 +91,10 @@ namespace PaginaWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> ConfirmarCompra()
         {
-            
+          //  if (ObtenerUsuarioId() ==0)
+           // {
+           //     return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("ConfirmarCompra") });
+           // }
 
             var carritoViewModel = await GetCarritoViewModelAsync();
             System.Diagnostics.Debug.WriteLine("Ítems en carrito: " + carritoViewModel.Items.Count);
@@ -104,7 +107,7 @@ namespace PaginaWeb.Controllers
 
             var pedido = new Pedido
             {
-               // UsuarioId = ObtenerUsuarioId(),
+                UsuarioId = ObtenerUsuarioId(),
                 FechaPedido = DateTime.Now,
                 Estado = "Pendiente",
                 Total = 0m,
