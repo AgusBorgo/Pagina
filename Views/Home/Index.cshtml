@@ -6,25 +6,7 @@
 }
 
 <div class="container">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb" id="breadcrumb-container">
-        </ol>
-    </nav>
 
-    <div class="container">
-        <div class="row mb-3">
-            <div class="col-md-12">
-                @foreach (var categoria in ViewBag.Categorias)
-                {
-                    <a href="@Url.Action("Productos", "Home", new { categoriaId = categoria.CategoriaId })"
-                       class="btn btn-outline-secondary btn-sm me-2">
-                        @categoria.Nombre
-                    </a>
-                }
-            </div>
-        </div>
-    </div>
 
     <h2 class="my-4">Productos destacados</h2>
 

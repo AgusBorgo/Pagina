@@ -64,5 +64,6 @@ options.UseSqlServer(builder.Configuration["ConnectionString:PaginaDBConnection"
 
             app.Run();
         }
+
     }
 }

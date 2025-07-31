@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
@@ -126,6 +127,76 @@ namespace PaginaWeb.Controllers
             carritoViewModel.Total = carritoViewModel.Items.Sum(i => i.Precio * i.Cantidad);
             return carritoViewModel;
         }
+
+
+        protected int ObtenerUsuarioId()
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                {
+                    return 0;
+                }
+                foreach (var claim in User.Claims)
+                {
+                    System.Diagnostics.Debug.WriteLine($"   - {claim.Type}: {claim.Value}");
+                }
+
+               
+                var usuarioIdClaim = User.FindFirst("UsuarioId");
+                if (usuarioIdClaim == null)
+                {
+                    var alternativeClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                    if (alternativeClaim != null)
+                    {
+                        
+                        if (int.TryParse(alternativeClaim.Value, out int altId))
+                        {
+                            return altId;
+                        }
+                    }
+
+                    return 0;
+                }
+
+                if (int.TryParse(usuarioIdClaim.Value, out int usuarioId))
+                {
+                    return usuarioId;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+        }
+
+
+        protected int ObtenerUsuarioIdAlternativo()
+        {
+            try
+            {
+                if (!User.Identity.IsAuthenticated)
+                    return 0;
+
+                var claim = User.Claims.FirstOrDefault(c => c.Type == "UsuarioId");
+                if (claim != null && int.TryParse(claim.Value, out int userId))
+                {
+                    return userId;
+                }
+
+                return 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+      
     }
 }
 

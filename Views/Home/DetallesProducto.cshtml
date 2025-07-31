@@ -29,12 +29,15 @@
                     <i class="fas fa-exclamation-circle"></i> Agotado
                 </div>
             }
+
+
             else
             {
-                <form method="post" action="@Url.Action("AgregarProductoDetalle", "Home")" class="d-flex">
+                <form method="post" action="@Url.Action("AgregarProductoIndex", "Home")" class="d-flex">
                     <input type="hidden" name="id" value="@Model.ProductoId" />
-                    <button type="submit" class="btn btn-primary btn-block">
-                        <i class="fas fa-cart-plus"></i> Agregar al carrito
+                    <input type="number" class="form-control me-2" name="cantidad" value="1" min="1" max="@Model.Stock" />
+                    <button type="submit" class="btn btn-outline-primary rounded-pill">
+                        <i class="fas fa-cart-plus"></i>
                     </button>
                 </form>
 

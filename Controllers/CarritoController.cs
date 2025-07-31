@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using System.Linq;
 using System;
 using PaginaWeb.Models;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 namespace PaginaWeb.Controllers
 {
@@ -91,47 +93,49 @@ namespace PaginaWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> ConfirmarCompra()
         {
-          //  if (ObtenerUsuarioId() ==0)
-           // {
-           //     return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("ConfirmarCompra") });
-           // }
+
+            int usuarioId = ObtenerUsuarioId();
+
+            // También intentamos obtener el ID del claim, si existe
+            var userIdClaim = User.FindFirst("UsuarioId")?.Value;
+
+
+            
+            if (usuarioId <= 0)
+            {
+                return BadRequest("Error: Usuario no encontrado en la base de datos.");
+            }
 
             var carritoViewModel = await GetCarritoViewModelAsync();
-            System.Diagnostics.Debug.WriteLine("Ítems en carrito: " + carritoViewModel.Items.Count);
 
             if (carritoViewModel.Items.Count == 0)
             {
-                System.Diagnostics.Debug.WriteLine("El carrito está vacío.");
                 return BadRequest("Tu carrito está vacío.");
             }
 
             var pedido = new Pedido
             {
-                UsuarioId = ObtenerUsuarioId(),
+                UsuarioId = usuarioId, 
                 FechaPedido = DateTime.Now,
                 Estado = "Pendiente",
                 Total = 0m,
                 PedidoDetalles = new List<PedidoDetalle>()
             };
 
+            
+
             foreach (var item in carritoViewModel.Items)
             {
-                System.Diagnostics.Debug.WriteLine( "Revisando producto con ID: " + item.ProductoId);
 
                 var producto = await _context.Producto.FindAsync(item.ProductoId);
-                if (producto == null)
-                {
-                    System.Diagnostics.Debug.WriteLine("Producto no encontrado.");
+                if (producto == null) { 
                     return NotFound($"Producto con ID {item.ProductoId} no encontrado.");
                 }
 
                 if (producto.Stock < item.Cantidad)
                 {
-                    System.Diagnostics.Debug.WriteLine(" Stock insuficiente para " + producto.Nombre);
-                    return BadRequest("No hay stock suficiente para {producto.Nombre}");
+                    return BadRequest($"No hay stock suficiente para {producto.Nombre}");
                 }
-
-                System.Diagnostics.Debug.WriteLine($"Producto OK: {producto.Nombre}, Cantidad: {item.Cantidad}");
 
                 producto.Stock -= item.Cantidad;
                 _context.Producto.Update(producto);
@@ -142,36 +146,62 @@ namespace PaginaWeb.Controllers
                     Cantidad = item.Cantidad,
                     PrecioUnitario = producto.Precio
                 };
+                
+              
 
                 pedido.PedidoDetalles.Add(detalle);
                 pedido.Total += producto.Precio * item.Cantidad;
+
             }
 
-            System.Diagnostics.Debug.WriteLine("Guardando pedido. Total: " + pedido.Total);
 
-            _context.Pedidos.Add(pedido);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.Pedidos.Add(pedido);
+                await _context.SaveChangesAsync();
 
-            await RemoveCarritoViewModelAsync();
+                var pedidoGuardado = await _context.Pedidos.FindAsync(pedido.PedidoId);
+               
+                bool finalizadoOk = await FinalizarPedido(pedido.PedidoId);
 
-            TempData["mensaje"] = "Confirmación de compra completada.";
-            System.Diagnostics.Debug.WriteLine("Compra confirmada");
+                await RemoveCarritoViewModelAsync();
 
-            return RedirectToAction("Index");
+                TempData["mensaje"] = "Confirmación de compra completada.";
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al procesar la compra: {ex.Message}");
+            }
         }
 
-        private int ObtenerUsuarioId()
+        private async Task<bool> FinalizarPedido(int pedidoId)
         {
-            if (User?.Identity?.IsAuthenticated == true)
+            try
             {
-                var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-                if (claim != null)
+                var pedido = await _context.Pedidos.FindAsync(pedidoId);
+                if (pedido == null)
                 {
-                    return int.Parse(claim.Value);
+                    System.Diagnostics.Debug.WriteLine($"❌ Pedido {pedidoId} no encontrado para finalizar");
+                    return false;
                 }
-            }
 
-            return 0; // Usuario no autenticado
+                System.Diagnostics.Debug.WriteLine($"🔍 Finalizando pedido {pedidoId}, Estado actual: {pedido.Estado}");
+
+                pedido.Estado = "Finalizado";
+                pedido.FechaFinalizacion = DateTime.Now;
+
+                _context.Pedidos.Update(pedido);
+                await _context.SaveChangesAsync();
+
+                System.Diagnostics.Debug.WriteLine($"✅ Pedido {pedidoId} finalizado exitosamente");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error al finalizar pedido: {ex.Message}");
+                return false;
+            }
         }
     }
 }

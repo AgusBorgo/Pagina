@@ -1,0 +1,39 @@
+﻿@model List<PaginaWeb.Models.Pedido>
+
+<h2>Historial de Compras</h2>
+
+@if (!Model.Any())
+{
+    <p>No tenés pedidos todavía.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Total</th>
+                <th>Productos</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pedido in Model)
+            {
+                <tr>
+                    <td>@pedido.FechaPedido.ToShortDateString()</td>
+                    <td>@pedido.Estado</td>
+                    <td>$@pedido.Total</td>
+                    <td>
+                        <ul>
+                            @foreach (var detalle in pedido.PedidoDetalles)
+                            {
+                                <li>@detalle.Producto.Nombre (x@detalle.Cantidad)</li>
+                            }
+                        </ul>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

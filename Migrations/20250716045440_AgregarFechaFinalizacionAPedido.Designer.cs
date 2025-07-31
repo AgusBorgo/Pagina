@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PaginaWeb.Context;
 
@@ -11,9 +12,11 @@ using PaginaWeb.Context;
 namespace PaginaWeb.Migrations
 {
     [DbContext(typeof(PaginaDatabaseContext))]
-    partial class PaginaDatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250716045440_AgregarFechaFinalizacionAPedido")]
+    partial class AgregarFechaFinalizacionAPedido
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

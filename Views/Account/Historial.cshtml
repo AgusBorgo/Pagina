@@ -1,0 +1,200 @@
+﻿@model IEnumerable<PaginaWeb.Models.Pedido>
+
+@{
+    ViewData["Title"] = "Historial de Pedidos";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Mi Historial de Pedidos
+                </h2>
+                <a href="@Url.Action("Index", "Home")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>
+                    Volver al Inicio
+                </a>
+            </div>
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Total de pedidos realizados: <strong>@Model.Count()</strong>
+                </div>
+
+                <div class="row">
+                    @foreach (var pedido in Model)
+                    {
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-shopping-bag me-1"></i>
+                                        Pedido #@pedido.PedidoId
+                                    </h6>
+                                    @{
+                                        var badgeClass = pedido.Estado switch
+                                        {
+                                            "Finalizado" => "bg-success",
+                                            "Pendiente" => "bg-warning text-dark",
+                                            "Cancelado" => "bg-danger",
+                                            "En Proceso" => "bg-info",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @badgeClass">@pedido.Estado</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-alt me-1"></i>
+                                            Fecha: @pedido.FechaPedido.ToString("dd/MM/yyyy HH:mm")
+                                        </small>
+                                    </div>
+
+                                    @if (pedido.FechaFinalizacion.HasValue)
+                                    {
+                                        <div class="mb-3">
+                                            <small class="text-muted">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                Finalizado: @pedido.FechaFinalizacion.Value.ToString("dd/MM/yyyy HH:mm")
+                                            </small>
+                                        </div>
+                                    }
+
+                                    <div class="mb-3">
+                                        <h5 class="text-primary mb-2">
+                                            <i class="fas fa-dollar-sign me-1"></i>
+                                            Total: $@pedido.Total.ToString("N2")
+                                        </h5>
+                                    </div>
+
+                                    @if (pedido.PedidoDetalles != null && pedido.PedidoDetalles.Any())
+                                    {
+                                        <div class="mb-3">
+                                            <h6 class="text-muted mb-2">
+                                                <i class="fas fa-list me-1"></i>
+                                                Productos (@pedido.PedidoDetalles.Count()):
+                                            </h6>
+                                            <ul class="list-unstyled">
+                                                @foreach (var detalle in pedido.PedidoDetalles.Take(3))
+                                                {
+                                                    <li class="small text-muted">
+                                                        <i class="fas fa-box me-1"></i>
+                                                        @detalle.Producto?.Nombre ?? "Producto no disponible"
+                                                        <span class="badge bg-light text-dark ms-1">x@detalle.Cantidad</span>
+                                                    </li>
+                                                }
+                                                @if (pedido.PedidoDetalles.Count() > 3)
+                                                {
+                                                    <li class="small text-muted">
+                                                        <i class="fas fa-ellipsis-h me-1"></i>
+                                                        y @(pedido.PedidoDetalles.Count() - 3) más...
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <a href="@Url.Action("DetallePedido", "Account", new { id = pedido.PedidoId })"
+                                       class="btn btn-primary btn-sm w-100">
+                                        <i class="fas fa-eye me-1"></i>
+                                        Ver Detalles
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Estadísticas rápidas -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Resumen de Pedidos
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="p-3">
+                                    <h4 class="text-primary">@Model.Count()</h4>
+                                    <small class="text-muted">Total Pedidos</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-3">
+                                    <h4 class="text-success">@Model.Count(p => p.Estado == "Finalizado")</h4>
+                                    <small class="text-muted">Finalizados</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-3">
+                                    <h4 class="text-warning">@Model.Count(p => p.Estado == "Pendiente")</h4>
+                                    <small class="text-muted">Pendientes</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-3">
+                                    <h4 class="text-primary">$@Model.Sum(p => p.Total).ToString("N2")</h4>
+                                    <small class="text-muted">Total Gastado</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card text-center">
+                    <div class="card-body py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-shopping-cart fa-5x text-muted"></i>
+                        </div>
+                        <h4 class="text-muted mb-3">No tienes pedidos aún</h4>
+                        <p class="text-muted mb-4">¡Comienza a explorar nuestros productos y realiza tu primer pedido!</p>
+                        <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+                            <i class="fas fa-shopping-bag me-2"></i>
+                            Explorar Productos
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+    }
+
+    .badge {
+        font-size: 0.75em;
+    }
+
+    .text-primary {
+        color: #007bff !important;
+    }
+
+    .text-success {
+        color: #28a745 !important;
+    }
+
+    .text-warning {
+        color: #ffc107 !important;
+    }
+
+    .shadow-sm {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+    }
+</style>

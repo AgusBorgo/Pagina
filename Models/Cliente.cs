@@ -6,9 +6,6 @@ namespace PaginaWeb.Models
 {
     public class Cliente
     {
-        public Cliente() { 
-            Pedidos = new List<Pedido>();
-        }
 
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

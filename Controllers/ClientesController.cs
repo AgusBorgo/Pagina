@@ -171,5 +171,9 @@ namespace PaginaWeb.Controllers
         {
             return _context.Clientes.Any(e => e.UsuarioId == id);
         }
+
+       
     }
+
+
 }

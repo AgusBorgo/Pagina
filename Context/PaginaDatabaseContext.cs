@@ -14,11 +14,22 @@ namespace PaginaWeb.Context
         {
         }
         public DbSet<Cliente> Clientes { get; set; }
-        public DbSet<PaginaWeb.Models.Producto> Producto { get; set; } = default!;
+        public DbSet<Producto> Producto { get; set; } = default!;
         public DbSet<Pedido> Pedidos { get; set; } = default!;
         public DbSet<PedidoDetalle> PedidoDetalles { get; set; } = default!;
         public DbSet<Rol> Roles { get; set; } = default!; // Agregar DbSet para Rol
         public DbSet<PaginaWeb.Models.Categoria> Categoria { get; set; } = default!;
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Pedido>()
+                .HasOne(p => p.Usuario)
+                .WithMany(c => c.Pedidos)
+                .HasForeignKey(p => p.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade); // o Restrict, según tu lógica
+        }
 
     }
     
