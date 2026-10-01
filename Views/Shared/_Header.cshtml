@@ -1,76 +1,75 @@
-﻿
-@using System.Security.Claims
+﻿@{
+    bool logueado = User.Identity?.IsAuthenticated ?? false;
+    int cantCarrito = ViewBag.NumeroProductos as int? ?? 0;
+}
 
-<header>
-	<nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3"> 
-		<div class="container-fluid mx-5">
-			<a class="navbar-brand" asp-controller="Home" asp-action="Index">BORGO</a>
-			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-toggle="#navbarSupportedContent"
-			arial-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-				<samp class="navbar-toggler-icon"></samp>		
-			</button>
-			<div class="navbar-collapse collapse d-sm-inline-flex justify-content-between" id="navbarSupportedContent">
-				<form class="form-check-inline mx-auto" asp-controller="Home" asp-action="Productos" method="get">
-					<div class="input-group">
-							<i class="fa-solid" fa-magnifying-glass> </i>
-						
-					</div>
-				</form>
-				<ul class="navbar-nav">
-					<li class="nav-item">
+<header class="sitio-header">
+    <nav class="navbar navbar-expand-lg sitio-nav" aria-label="Navegación principal">
+        <div class="container-fluid sitio-nav__contenido">
 
-						<a class="nav-link text-dark" asp-controller="Carrito" asp-action="Index">
-							<i class="fa-solid fa-cart-shopping"></i> 
-							<span class="badge badge-pill badge-danger bg-primary">
-								@ViewBag.NumeroProductos
-							</span>
-						</a>
-					</li>
-					@if(User.Identity != null && User.Identity.IsAuthenticated)
-					{
-						string nombreUsuario = User.Identity.Name ?? "Desconocido";
+            <a class="marca" asp-controller="Home" asp-action="Index">
+                <span class="marca__nombre">BORGO</span>
+                <span class="marca__sub">discos</span>
+            </a>
 
-						<li class="nav-item dropdown"> 
-							<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" arial-expanded="false">
-								<i class="fa-regular fa-user">@nombreUsuario</i>
-							</a>
-							<ul class="dropdown-menu">
-								<li>
-									<a class="dropdown-item" asp-controller="Clientes" asp-action="misDatos">
-										<i class="fa-solid fa-user"></i> Perfil
-									</a>
-								</li>
-								<li>
-									<a class="dropdown-item" asp-controller="Account" asp-action="Logout">
-										<i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
-									</a>
-								</li>
-								<li>
-									<a class="dropdown-item" asp-controller="Account" asp-action="Historial">
-										<i class="fa-solid fa-history"></i> Historial de Compras
-									</a>
-								</li>
-								@if (User.IsInRole("Admin"))
-								{
-									<li>
-										<a class="dropdown-item" asp-controller="Dashboard" asp-action="Index">
-											<i class="fa-solid fa-tachometer-alt"></i> Dashboard
-										</a>
-									</li>
-								}
-							</ul>
-						</li>
-					} else
-					{
-					<li class="nav-item"> 
-						<a class="nav-link" asp-controller="Account" asp-action="Login">
-							<i class="fa-regular fa-user"></i>
-						</a>
-					</li>	
-					}
-				</ul>
-		</div>
-		</div>
-	</nav>
+            <button class="navbar-toggler sitio-nav__toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#menuPrincipal" aria-controls="menuPrincipal"
+                    aria-expanded="false" aria-label="Abrir menú">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
 
+            <div class="collapse navbar-collapse" id="menuPrincipal">
+                <ul class="navbar-nav sitio-nav__links">
+                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Productos">Catálogo</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index" asp-fragment="generos">Géneros</a></li>
+                </ul>
+
+                <form class="buscador-header" asp-controller="Home" asp-action="Productos" method="get" role="search">
+                    <label for="busquedaHeader" class="visually-hidden">Buscar disco o artista</label>
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <input id="busquedaHeader" type="search" name="busqueda" placeholder="Buscar disco o artista" />
+                </form>
+
+                <ul class="navbar-nav sitio-nav__acciones">
+                    @if (logueado)
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle icono-boton" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-regular fa-user" aria-hidden="true"></i>
+                                <span class="ms-1">@User.Identity?.Name</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" asp-controller="Clientes" asp-action="misDatos">Mis datos</a></li>
+                                <li><a class="dropdown-item" asp-controller="Account" asp-action="Historial">Mis pedidos</a></li>
+                                @if (User.IsInRole("Administrador"))
+                                {
+                                    <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+                                }
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-controller="Account" asp-action="Logout">Cerrar sesión</a></li>
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link icono-boton" asp-controller="Account" asp-action="Login" aria-label="Iniciar sesión">
+                                <i class="fa-regular fa-user" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    }
+                    <li class="nav-item">
+                        <a class="nav-link icono-boton carrito-link" asp-controller="Carrito" asp-action="Index"
+                           aria-label="Carrito, @cantCarrito productos">
+                            <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>
+                            @if (cantCarrito > 0)
+                            {
+                                <span class="carrito-link__contador">@cantCarrito</span>
+                            }
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 </header>

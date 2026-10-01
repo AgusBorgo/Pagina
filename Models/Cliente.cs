@@ -25,9 +25,9 @@ namespace PaginaWeb.Models
         [Phone(ErrorMessage = "El formato del teléfono no es válido.")]
         public string Telefono { get; set; } = string.Empty;
         public string Direccion { get; set; } = string.Empty;
-        public int RolId { get; set; } = 2; // Rol de cliente por defecto
+        public int RolId { get; set; }
         [ForeignKey("RolId")]
-        public Rol Rol { get; set; } = new Rol(); // Relación con la entidad Rol
+        public Rol? Rol { get; set; }
         public ICollection<Pedido> Pedidos { get; set; } = new List<Pedido>(); // Relación con la entidad Pedido
         
 

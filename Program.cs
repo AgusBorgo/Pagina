@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using PaginaWeb.Context;
 using PaginaWeb.Services;
+using PaginaWeb.Models;
 
 namespace PaginaWeb
 {
@@ -19,7 +20,7 @@ options.UseSqlServer(builder.Configuration["ConnectionString:PaginaDBConnection"
             builder.Services.AddAuthorization(options =>
             {
                 options.AddPolicy("AdminOnly", policy =>
-                    policy.RequireRole("Admin"));
+                    policy.RequireRole("Administrador"));
             });
 
             // Configura la autenticación con cookies
@@ -41,6 +42,22 @@ options.UseSqlServer(builder.Configuration["ConnectionString:PaginaDBConnection"
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();
+
+            // Crea los roles si todavía no existen en la base
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<PaginaDatabaseContext>();
+
+                foreach (var nombreRol in new[] { "Administrador", "Cliente" })
+                {
+                    if (!db.Roles.Any(r => r.Nombre == nombreRol))
+                    {
+                        db.Roles.Add(new Rol { Nombre = nombreRol });
+                    }
+                }
+
+                db.SaveChanges();
+            }
 
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
