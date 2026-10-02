@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PaginaWeb.Context;
 using PaginaWeb.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PaginaWeb.Controllers
 {
+    [Authorize(Policy = "AdminOnly")]
     public class PedidoDetallesController : BaseController
     {
         public PedidoDetallesController(PaginaDatabaseContext context) : base(context) { }

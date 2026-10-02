@@ -90,6 +90,7 @@ namespace PaginaWeb.Controllers
             return Task.CompletedTask;
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> ConfirmarCompra()
         {

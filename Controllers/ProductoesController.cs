@@ -1,15 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PaginaWeb.Context;
 using PaginaWeb.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace PaginaWeb.Controllers
 {
+    [Authorize(Policy = "AdminOnly")]
     public class ProductoesController : Controller
     {
         private readonly PaginaDatabaseContext _context;

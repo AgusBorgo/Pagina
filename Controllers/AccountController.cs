@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace PaginaWeb.Controllers
 {
+    [Authorize]
     public class AccountController : BaseController
     {
         private readonly PasswordHasher<Cliente> _hasher = new();
@@ -78,7 +79,7 @@ namespace PaginaWeb.Controllers
             }
         }
 
-      
+        [AllowAnonymous]
         public IActionResult Login()
         {
             if (User.Identity != null && User.Identity.IsAuthenticated)
@@ -92,7 +93,7 @@ namespace PaginaWeb.Controllers
             return View();
         }
 
-       
+        [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> Login(string email, string contrasena)
         {
@@ -192,23 +193,6 @@ namespace PaginaWeb.Controllers
             }
 
             return View(pedido);
-        }
-
-        public async Task<IActionResult> DebugPedidos()
-        {
-            int usuarioId = ObtenerUsuarioId();
-
-            var todosPedidos = await _context.Pedidos
-                .Where(p => p.UsuarioId == usuarioId)
-                .ToListAsync();
-
-
-            foreach (var pedido in todosPedidos)
-            {
-                System.Diagnostics.Debug.WriteLine($"Pedido ID: {pedido.PedidoId}, Estado: {pedido.Estado}, Fecha: {pedido.FechaPedido}");
-            }
-
-            return View("Historial", todosPedidos); 
         }
 
     }

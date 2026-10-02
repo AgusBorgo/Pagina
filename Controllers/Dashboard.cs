@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PaginaWeb.Context;
 
 namespace PaginaWeb.Controllers
 {
+    [Authorize(Policy = "AdminOnly")]
     public class Dashboard : BaseController
     {
         public Dashboard(PaginaDatabaseContext context) : base(context)
