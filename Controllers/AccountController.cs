@@ -7,11 +7,14 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
+
 
 namespace PaginaWeb.Controllers
 {
     public class AccountController : BaseController
     {
+        private readonly PasswordHasher<Cliente> _hasher = new();
         public AccountController(PaginaDatabaseContext context) : base(context) { }
 
         [AllowAnonymous]
@@ -39,7 +42,7 @@ namespace PaginaWeb.Controllers
                     {
                         usuario.RolId = clienteRol.RolId;
                     }
-
+                    usuario.Contrasena = _hasher.HashPassword(usuario, usuario.Contrasena);
                     _context.Clientes.Add(usuario);
                     await _context.SaveChangesAsync();
 
@@ -101,9 +104,8 @@ namespace PaginaWeb.Controllers
 
             var usuario = await _context.Clientes
                 .Include(u => u.Rol)
-                .FirstOrDefaultAsync(u => u.Email == email && u.Contrasena == contrasena);
-
-            if (usuario == null)
+                .FirstOrDefaultAsync(u => u.Email == email);
+            if (usuario == null || _hasher.VerifyHashedPassword(usuario, usuario.Contrasena, contrasena) == PasswordVerificationResult.Failed)
             {
                 ModelState.AddModelError("", "Correo electrónico o contraseña incorrectos.");
                 return View();
@@ -114,7 +116,7 @@ namespace PaginaWeb.Controllers
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
             identity.AddClaim(new Claim("UsuarioId", usuario.UsuarioId.ToString())); 
             identity.AddClaim(new Claim(ClaimTypes.Name, usuario.Nombre));
-            identity.AddClaim(new Claim(ClaimTypes.Role, usuario.Rol.Nombre));
+            identity.AddClaim(new Claim(ClaimTypes.Role, usuario.Rol?.Nombre ?? "Cliente"));
 
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
@@ -122,9 +124,9 @@ namespace PaginaWeb.Controllers
                 new AuthenticationProperties { IsPersistent = true }
             );
 
-            
-            if (usuario.Rol.Nombre == "Administrador")
-                return RedirectToAction("Index", "Admin");
+
+            if (usuario.Rol?.Nombre == "Administrador")
+                return RedirectToAction("Index", "Dashboard");
             else
                 return RedirectToAction("Index", "Home");
         }

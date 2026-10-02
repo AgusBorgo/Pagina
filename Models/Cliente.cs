@@ -19,7 +19,7 @@ namespace PaginaWeb.Models
         [EmailAddress(ErrorMessage = "El formato del correo electrónico no es válido.")]
         public string Email { get; set; } = string.Empty;
         [Required]
-        [StringLength(20, ErrorMessage = "La contraseña no puede exceder los 20 caracteres.")]
+        [StringLength(100, ErrorMessage = "La contraseña no puede exceder los 20 caracteres.")]
         public string Contrasena { get; set; } = string.Empty;
         [Required]
         [Phone(ErrorMessage = "El formato del teléfono no es válido.")]
