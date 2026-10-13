@@ -1,32 +1,35 @@
-﻿@{
-	ViewData["Title"] = "Iniciar sesion";
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Iniciar sesión";
 }
 
-<div class="container bg-light p-4">
-	@if (User.Identity != null && User.Identity.IsAuthenticated)
-	{
-		<p>Ya iniciaste sesion</p>
-		<script>
-			setTimeout(function() {
-			window.location.href = '@Url.Action("Index", "Home")';
-			}, 3000);
-		</script>
-	}
-	else
-	{
-		<h2>Iniciar sesion</h2>
-		<form method="post">
-			<div class="form-group">
-				<label for="email">Nombre de usuario</label>
-				<input id="email" name="email" required type="text" class="form-control"></input>
-			</div>
-			<div class="form-group">
-				<label for="contrasena">Contrasenia</label>
-				<input id="contrasena" name="contrasena" required type="password" class="form-control"></input>
-			</div>
-			<button type="submit" class="btn btn-primary">Ingresar</button>
-		</form>
-		<br />
-		<a class="btn btn-outline-primary mt-2" asp-controller="Account" asp-action="Register">Registrarse</a>
-	}
+<div class="cuenta">
+    <div class="cuenta__lado">
+        <p class="rotulo">Tu cuenta</p>
+        <h1 class="titulo-pagina">Iniciar sesión</h1>
+        <p>Entrá para confirmar tus compras y ver el historial de tus pedidos.</p>
+    </div>
+
+    <div class="cuenta__caja">
+        <form asp-action="Login" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="resumen-errores" role="alert"></div>
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <div class="campo">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" type="email" autocomplete="email" autofocus />
+                <span asp-validation-for="Email" class="campo__error"></span>
+            </div>
+
+            <div class="campo">
+                <label asp-for="Contrasena"></label>
+                <input asp-for="Contrasena" autocomplete="current-password" />
+                <span asp-validation-for="Contrasena" class="campo__error"></span>
+            </div>
+
+            <button type="submit" class="boton boton--acento boton--ancho">Ingresar</button>
+        </form>
+
+        <p class="cuenta__pie">¿Todavía no tenés cuenta? <a asp-action="Register">Creá una</a></p>
+    </div>
 </div>

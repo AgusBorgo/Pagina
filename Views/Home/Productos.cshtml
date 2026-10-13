@@ -1,0 +1,106 @@
+@model PaginaWeb.Models.ProductosPaginadosViewModel.ProductosPaginadosViewModel
+@{
+    var categorias = ViewBag.Categorias as List<Categoria> ?? new List<Categoria>();
+    var categoriaActual = categorias.FirstOrDefault(c => c.CategoriaId == Model.CategoriaId);
+    ViewData["Title"] = categoriaActual?.Nombre ?? "Catálogo";
+    bool hayBusqueda = !string.IsNullOrWhiteSpace(Model.Busqueda);
+}
+
+<p class="rotulo">Catálogo</p>
+<h1 class="titulo-pagina">@(categoriaActual?.Nombre ?? "Todos los discos")</h1>
+
+<div class="catalogo">
+    <aside class="filtros" aria-label="Géneros">
+        <h2>Géneros</h2>
+        <ul>
+            <li>
+                <a asp-action="Productos" asp-route-busqueda="@Model.Busqueda"
+                   class="@(Model.CategoriaId is null or 0 ? "activo" : "")">Todos</a>
+            </li>
+            @foreach (var c in categorias)
+            {
+                bool activo = c.CategoriaId == Model.CategoriaId;
+                <li>
+                    <a asp-action="Productos" asp-route-categoriaId="@c.CategoriaId" asp-route-busqueda="@Model.Busqueda"
+                       class="@(activo ? "activo" : "")">@c.Nombre</a>
+                </li>
+            }
+        </ul>
+    </aside>
+
+    <div>
+        <div class="catalogo__barra">
+            <form asp-action="Productos" method="get" role="search">
+                @if (Model.CategoriaId > 0)
+                {
+                    <input type="hidden" name="categoriaId" value="@Model.CategoriaId" />
+                }
+                <label for="busquedaCatalogo" class="visually-hidden">Buscar disco o artista</label>
+                <input id="busquedaCatalogo" class="entrada" type="search" name="busqueda" value="@Model.Busqueda" placeholder="Buscar disco o artista" />
+                <button type="submit" class="boton boton--acento">Buscar</button>
+            </form>
+            <p class="catalogo__total" role="status">
+                @Model.TotalProductos @(Model.TotalProductos == 1 ? "disco" : "discos")
+                @if (hayBusqueda)
+                {
+                    <text>para “@Model.Busqueda” · <a asp-action="Productos" asp-route-categoriaId="@Model.CategoriaId">Limpiar búsqueda</a></text>
+                }
+            </p>
+        </div>
+
+        @if (!Model.TieneProductos)
+        {
+            <div class="vacio">
+                <p>No encontramos discos @(hayBusqueda ? $"para “{Model.Busqueda}”" : "en este género").</p>
+                <a class="boton boton--borde" asp-action="Productos">Ver todo el catálogo</a>
+            </div>
+        }
+        else
+        {
+            <div class="grilla-discos grilla-discos--catalogo">
+                @foreach (var disco in Model.Productos)
+                {
+                    <partial name="_TarjetaDisco" model="disco" />
+                }
+            </div>
+
+            @if (Model.TotalPaginas > 1)
+            {
+                <nav class="paginacion" aria-label="Páginas del catálogo">
+                    @if (Model.PaginaActual > 1)
+                    {
+                        <a asp-action="Productos" asp-route-categoriaId="@Model.CategoriaId" asp-route-busqueda="@Model.Busqueda"
+                           asp-route-pagina="@(Model.PaginaActual - 1)" aria-label="Página anterior"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></a>
+                    }
+                    else
+                    {
+                        <span class="deshabilitado" aria-hidden="true"><i class="fa-solid fa-chevron-left"></i></span>
+                    }
+
+                    @for (int p = 1; p <= Model.TotalPaginas; p++)
+                    {
+                        if (p == Model.PaginaActual)
+                        {
+                            <span class="actual" aria-current="page">@p</span>
+                        }
+                        else
+                        {
+                            <a asp-action="Productos" asp-route-categoriaId="@Model.CategoriaId" asp-route-busqueda="@Model.Busqueda"
+                               asp-route-pagina="@p">@p</a>
+                        }
+                    }
+
+                    @if (Model.PaginaActual < Model.TotalPaginas)
+                    {
+                        <a asp-action="Productos" asp-route-categoriaId="@Model.CategoriaId" asp-route-busqueda="@Model.Busqueda"
+                           asp-route-pagina="@(Model.PaginaActual + 1)" aria-label="Página siguiente"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+                    }
+                    else
+                    {
+                        <span class="deshabilitado" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
+                    }
+                </nav>
+            }
+        }
+    </div>
+</div>

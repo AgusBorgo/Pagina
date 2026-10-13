@@ -1,0 +1,37 @@
+<footer class="sitio-footer">
+    <div class="sitio-footer__arriba">
+        <div class="sitio-footer__marca">
+            <a class="marca" asp-controller="Home" asp-action="Index">
+                <span class="marca__nombre">BORGO</span>
+                <span class="marca__sub">discos</span>
+            </a>
+            <p>Disquería online de CDs de rock nacional.</p>
+        </div>
+        <div class="sitio-footer__columnas">
+            <nav aria-label="Tienda">
+                <h2>Tienda</h2>
+                <a asp-controller="Home" asp-action="Productos">Catálogo</a>
+                <a asp-controller="Home" asp-action="Index" asp-fragment="generos">Géneros</a>
+                <a asp-controller="Carrito" asp-action="Index">Carrito</a>
+            </nav>
+            <nav aria-label="Tu cuenta">
+                <h2>Tu cuenta</h2>
+                @if (User.Identity?.IsAuthenticated ?? false)
+                {
+                    <a asp-controller="Account" asp-action="MisDatos">Mis datos</a>
+                    <a asp-controller="Account" asp-action="Historial">Mis pedidos</a>
+                    <a asp-controller="Account" asp-action="Logout">Cerrar sesión</a>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login">Iniciar sesión</a>
+                    <a asp-controller="Account" asp-action="Register">Crear cuenta</a>
+                }
+            </nav>
+        </div>
+    </div>
+    <div class="sitio-footer__abajo">
+        <span>Proyecto de portfolio de Agustina Borgoña</span>
+        <span>ASP.NET Core MVC · Entity Framework Core · SQL Server</span>
+    </div>
+</footer>

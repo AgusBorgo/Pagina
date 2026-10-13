@@ -1,181 +1,106 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PaginaWeb.Context;
-using PaginaWeb.Models;
-using Microsoft.AspNetCore.Authorization;
+using PaginaWeb.Models.ViewModel;
 
 namespace PaginaWeb.Controllers
 {
+    // Administración de usuarios. Los clientes se registran solos desde la tienda,
+    // así que acá solo se consultan, se cambia su rol o se eliminan. Nunca se ven contraseñas.
     [Authorize(Policy = "AdminOnly")]
     public class ClientesController : BaseController
     {
+        public ClientesController(PaginaDatabaseContext context) : base(context) { }
 
-        public ClientesController(PaginaDatabaseContext context): base(context)
-
-        {
-        }
-
-        // GET: Clientes
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Clientes.ToListAsync());
+            var usuarios = await _context.Clientes
+                .Include(c => c.Rol)
+                .Include(c => c.Pedidos)
+                .OrderBy(c => c.Apellido)
+                .ThenBy(c => c.Nombre)
+                .ToListAsync();
+            return View(usuarios);
         }
 
-        // GET: Clientes/Details/5
-        public async Task<IActionResult> Details(int? id)
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == null)
+            var usuario = await _context.Clientes.FindAsync(id);
+            if (usuario == null)
             {
                 return NotFound();
             }
 
-            var cliente = await _context.Clientes
-                .FirstOrDefaultAsync(m => m.UsuarioId == id);
-            if (cliente == null)
+            await CargarRoles(usuario.RolId);
+            return View(new UsuarioAdminViewModel
             {
-                return NotFound();
-            }
-
-            return View(cliente);
+                UsuarioId = usuario.UsuarioId,
+                NombreCompleto = $"{usuario.Nombre} {usuario.Apellido}",
+                Email = usuario.Email,
+                Telefono = usuario.Telefono,
+                Direccion = usuario.Direccion,
+                RolId = usuario.RolId
+            });
         }
 
-        // GET: Clientes/Create
-        public IActionResult Create()
-        {
-            ViewData["RolId"] = new SelectList(_context.Roles, "RolId", "Nombre");
-            return View();
-        }
-
-        // POST: Clientes/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nombre,Apellido,Email,Telefono,Direccion")] Cliente cliente)
+        public async Task<IActionResult> Edit(int id, int rolId)
         {
-            var Rol = await _context.Roles
-                .Where(d => d.RolId == cliente.RolId)
-                .FirstOrDefaultAsync();
-
-            if (Rol != null)
+            var usuario = await _context.Clientes.FindAsync(id);
+            if (usuario == null || !await _context.Roles.AnyAsync(r => r.RolId == rolId))
             {
-                cliente.Rol = Rol;
+                return NotFound();
             }
-          
-            if (ModelState.IsValid)
-            { 
-                _context.Add(cliente);
-                await _context.SaveChangesAsync();
+
+            // Evita que el admin se quite su propio rol y se quede afuera del panel
+            if (usuario.UsuarioId == ObtenerUsuarioId() && usuario.RolId != rolId)
+            {
+                TempData["Error"] = "No podés cambiar tu propio rol.";
                 return RedirectToAction(nameof(Index));
             }
-            return View(cliente);
+
+            usuario.RolId = rolId;
+            await _context.SaveChangesAsync();
+            TempData["Mensaje"] = $"Se actualizó el rol de {usuario.Nombre}. El cambio se aplica la próxima vez que inicie sesión.";
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: Clientes/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-
-            var cliente = await _context.Clientes.FindAsync(id);
-            if (cliente == null)
-            {
-                return NotFound();
-            }
-            return View(cliente);
+            var usuario = await _context.Clientes
+                .Include(c => c.Rol)
+                .Include(c => c.Pedidos)
+                .FirstOrDefaultAsync(c => c.UsuarioId == id);
+            return usuario == null ? NotFound() : View(usuario);
         }
 
-        // POST: Clientes/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre,Apellido,Email,Telefono,Direccion")] Cliente cliente)
-        {
-            if (id != cliente.UsuarioId)
-            {
-                return NotFound();
-            }
-
-            var Rol = await _context.Roles
-                .Where(d => d.RolId == cliente.RolId)
-                .FirstOrDefaultAsync();
-            if (Rol != null)
-            {
-                cliente.Rol = Rol;
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(cliente);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ClienteExists(cliente.UsuarioId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(cliente);
-        }
-
-        // GET: Clientes/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var cliente = await _context.Clientes
-                .FirstOrDefaultAsync(m => m.UsuarioId == id);
-            if (cliente == null)
-            {
-                return NotFound();
-            }
-
-            return View(cliente);
-        }
-
-        // POST: Clientes/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var cliente = await _context.Clientes.FindAsync(id);
-            if (cliente != null)
+            if (id == ObtenerUsuarioId())
             {
-                _context.Clientes.Remove(cliente);
+                TempData["Error"] = "No podés eliminar tu propio usuario.";
+                return RedirectToAction(nameof(Index));
             }
 
-            await _context.SaveChangesAsync();
+            var usuario = await _context.Clientes.FindAsync(id);
+            if (usuario != null)
+            {
+                _context.Clientes.Remove(usuario);
+                await _context.SaveChangesAsync();
+                TempData["Mensaje"] = $"Se eliminó a {usuario.Nombre} {usuario.Apellido}.";
+            }
             return RedirectToAction(nameof(Index));
         }
 
-        private bool ClienteExists(int id)
+        private async Task CargarRoles(int seleccionado)
         {
-            return _context.Clientes.Any(e => e.UsuarioId == id);
+            var roles = await _context.Roles.OrderBy(r => r.Nombre).ToListAsync();
+            ViewBag.Roles = new SelectList(roles, "RolId", "Nombre", seleccionado);
         }
-
-       
     }
-
-
 }

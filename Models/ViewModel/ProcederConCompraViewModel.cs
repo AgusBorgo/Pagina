@@ -1,8 +1,8 @@
-﻿namespace PaginaWeb.Models.ViewModel
+namespace PaginaWeb.Models.ViewModel
 {
     public class ProcederConCompraViewModel
     {
-        public CarritoViewModel Carrito { get; set; }
+        public CarritoViewModel Carrito { get; set; } = new CarritoViewModel();
         public string? DireccionEnvio { get; set; }
     }
 }

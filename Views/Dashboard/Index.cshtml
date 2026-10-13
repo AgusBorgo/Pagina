@@ -1,39 +1,92 @@
-﻿
+@model List<Pedido>
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Administración";
 }
-<h1>Dashboard</h1>
 
-<div class="container mt-4">
-	<h1 class="text-center">Bienvenido al Dashboard</h1>
-	<p class="lead">Aquí puedes gestionar tus productos y clientes.</p>
-
-	<div class="row">
-		<div class="col-md-6">
-			<h2>Productos</h2>
-			<p>Administra tus productos aquí.</p>
-			<a class="btn btn-primary" asp-controller="Productoes" asp-action="Index">Ver Productos</a>
-		</div>
-		<div class="col-md-6">
-			<h2>Clientes</h2>
-			<p>Administra tus clientes aquí.</p>
-			<a class="btn btn-primary" asp-controller="Clientes" asp-action="Index">Ver Clientes</a>
-		</div>
-		<div class="col-md-6">
-			<h2>Categorias</h2>
-			<p>Administra tus categorias aquí.</p>
-			<a class="btn btn-primary" asp-controller="Categoria" asp-action="Index">Ver Categorias</a>
-		</div>
-		<div class="col-md-6">
-			<h2>Pedidos</h2>
-			<p>Administra tus pedidos aquí.</p>
-			<a class="btn btn-primary" asp-controller="Pedidos" asp-action="Index">Ver Pedidos</a>
-		</div>
-		<div class="col-md-6">
-			<h2>Roles</h2>
-			<p>Administra tus roles aquí.</p>
-			<a class="btn btn-primary" asp-controller="Rol" asp-action="Index">Ver Roles</a>
-		</div>
-
+<div class="admin-encabezado">
+    <div>
+        <p class="rotulo">Panel de administración</p>
+        <h1 class="titulo-pagina">Hola, @User.Identity?.Name</h1>
+    </div>
+    <a class="boton boton--acento" asp-controller="Productoes" asp-action="Create">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i> Cargar disco
+    </a>
 </div>
 
+<div class="metricas">
+    <div class="metrica">
+        <span class="metrica__valor">@ViewBag.TotalDiscos</span>
+        <span class="metrica__nombre">Discos</span>
+    </div>
+    <div class="metrica">
+        <span class="metrica__valor">@ViewBag.SinStock</span>
+        <span class="metrica__nombre">Sin stock</span>
+    </div>
+    <div class="metrica">
+        <span class="metrica__valor">@ViewBag.TotalPedidos</span>
+        <span class="metrica__nombre">Pedidos</span>
+    </div>
+    <div class="metrica">
+        <span class="metrica__valor">@ViewBag.TotalClientes</span>
+        <span class="metrica__nombre">Clientes</span>
+    </div>
+</div>
+
+<div class="accesos mb-5">
+    <a class="acceso" asp-controller="Productoes" asp-action="Index">
+        <i class="fa-solid fa-compact-disc" aria-hidden="true"></i>
+        <div><strong>Discos</strong><span>Cargar, editar precios y stock.</span></div>
+    </a>
+    <a class="acceso" asp-controller="Categorias" asp-action="Index">
+        <i class="fa-solid fa-tags" aria-hidden="true"></i>
+        <div><strong>Géneros</strong><span>Organizar el catálogo.</span></div>
+    </a>
+    <a class="acceso" asp-controller="Pedidoes" asp-action="Index">
+        <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+        <div><strong>Pedidos</strong><span>Ver qué se vendió y a quién.</span></div>
+    </a>
+    <a class="acceso" asp-controller="Clientes" asp-action="Index">
+        <i class="fa-solid fa-users" aria-hidden="true"></i>
+        <div><strong>Usuarios</strong><span>Consultar clientes y roles.</span></div>
+    </a>
+    <a class="acceso" asp-controller="Home" asp-action="Index">
+        <i class="fa-solid fa-store" aria-hidden="true"></i>
+        <div><strong>Ver la tienda</strong><span>Como la ve un cliente.</span></div>
+    </a>
+    <div class="acceso">
+        <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i>
+        <div><strong>@Formato.Precio((decimal)ViewBag.Facturado)</strong><span>Total vendido.</span></div>
+    </div>
+</div>
+
+<h2 class="seccion__titulo mb-4">Últimos pedidos</h2>
+@if (!Model.Any())
+{
+    <p class="vacio">Todavía no hay pedidos.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="tabla-simple">
+            <thead>
+                <tr>
+                    <th scope="col">Pedido</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col" class="num">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td><a asp-controller="Pedidoes" asp-action="Details" asp-route-id="@p.PedidoId">#@p.PedidoId</a></td>
+                        <td>@(p.Usuario != null ? $"{p.Usuario.Nombre} {p.Usuario.Apellido}" : "—")</td>
+                        <td>@Formato.FechaHora(p.FechaPedido)</td>
+                        <td class="num">@Formato.Precio(p.Total)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

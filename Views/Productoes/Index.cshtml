@@ -1,59 +1,85 @@
-﻿@model IEnumerable<PaginaWeb.Models.Producto>
-
+@model List<Producto>
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Discos · Administración";
 }
 
-<h1>Index</h1>
+<nav aria-label="Ubicación">
+    <ol class="migas">
+        <li><a asp-controller="Dashboard" asp-action="Index">Administración</a></li>
+        <li aria-current="page">Discos</li>
+    </ol>
+</nav>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Nombre)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Descripcion)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Precio)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ImagenUrl)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Stock)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Nombre)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Descripcion)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Precio)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ImagenUrl)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Stock)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.ProductoId">Edit</a> |
-                    <a asp-action="Details" asp-route-id="@item.ProductoId">Details</a> |
-                    <a asp-action="Delete" asp-route-id="@item.ProductoId">Delete</a>
-            </td>
-        </tr>
+<div class="admin-encabezado">
+    <h1 class="titulo-pagina">Discos</h1>
+    <a class="boton boton--acento" asp-action="Create"><i class="fa-solid fa-plus" aria-hidden="true"></i> Cargar disco</a>
+</div>
+
+<form class="catalogo__barra" asp-action="Index" method="get" role="search">
+    <label for="busquedaAdmin" class="visually-hidden">Buscar por título o artista</label>
+    <input id="busquedaAdmin" class="entrada" type="search" name="busqueda" value="@ViewBag.Busqueda" placeholder="Buscar por título o artista" />
+    <button type="submit" class="boton boton--borde">Buscar</button>
+</form>
+
+@if (!Model.Any())
+{
+    <p class="vacio">No hay discos @(string.IsNullOrEmpty(ViewBag.Busqueda as string) ? "cargados todavía" : "que coincidan con la búsqueda").</p>
 }
-    </tbody>
-</table>
+else
+{
+    <div class="table-responsive">
+        <table class="tabla-simple">
+            <thead>
+                <tr>
+                    <th scope="col"><span class="visually-hidden">Tapa</span></th>
+                    <th scope="col">Disco</th>
+                    <th scope="col">Género</th>
+                    <th scope="col" class="num">Precio</th>
+                    <th scope="col" class="num">Stock</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(p.ImagenUrl))
+                            {
+                                <img class="admin-miniatura" src="@p.ImagenUrl" alt="" loading="lazy" />
+                            }
+                        </td>
+                        <td>
+                            <strong>@p.Nombre</strong>
+                            <div class="text-muted">@p.Artista @(p.Anio.HasValue ? $"· {p.Anio}" : "")</div>
+                        </td>
+                        <td>@p.Categoria?.Nombre</td>
+                        <td class="num">@Formato.Precio(p.Precio)</td>
+                        <td class="num">@p.Stock</td>
+                        <td>
+                            @if (!p.Activo)
+                            {
+                                <span class="etiqueta">Oculto</span>
+                            }
+                            else if (p.Stock < 1)
+                            {
+                                <span class="etiqueta etiqueta--acento">Sin stock</span>
+                            }
+                            else
+                            {
+                                <span class="etiqueta etiqueta--ok">A la venta</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="admin-acciones">
+                                <a class="boton-icono" asp-action="Edit" asp-route-id="@p.ProductoId" aria-label="Editar @p.Nombre"><i class="fa-solid fa-pen" aria-hidden="true"></i></a>
+                                <a class="boton-icono" asp-action="Delete" asp-route-id="@p.ProductoId" aria-label="Eliminar @p.Nombre"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

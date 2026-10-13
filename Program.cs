@@ -1,8 +1,10 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using PaginaWeb.Context;
+using PaginaWeb.Data;
 using PaginaWeb.Services;
-using PaginaWeb.Models;
 
 namespace PaginaWeb
 {
@@ -12,67 +14,64 @@ namespace PaginaWeb
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddDbContext<PaginaDatabaseContext>(
- options =>
-options.UseSqlServer(builder.Configuration["ConnectionString:PaginaDBConnection"]));
+            // Base de datos
+            builder.Services.AddDbContext<PaginaDatabaseContext>(options =>
+                options.UseSqlServer(builder.Configuration["ConnectionString:PaginaDBConnection"]));
 
-            // Permite tener un usuario administrador
+            // AutorizaciÃ³n: la polÃ­tica AdminOnly exige el rol Administrador
             builder.Services.AddAuthorization(options =>
             {
-                options.AddPolicy("AdminOnly", policy =>
-                    policy.RequireRole("Administrador"));
+                options.AddPolicy("AdminOnly", policy => policy.RequireRole(DatosIniciales.RolAdministrador));
             });
 
-            // Configura la autenticación con cookies
+            // AutenticaciÃ³n con cookies
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
             {
-                options.LoginPath = "/Account/Login"; // Ruta de inicio de sesión
-                options.AccessDeniedPath = "/Account/AccessDenied"; // Ruta de acceso denegado
-                options.Cookie.HttpOnly = true; // Hace que la cookie no sea accesible desde JavaScript               
-                options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // Tiempo de expiración de la sesión
-                options.SlidingExpiration = true; // Permite que la sesión se extienda si el usuario está activo
-                options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always; // Asegura que la cookie solo se envíe a través de HTTPS
-                options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict; // Previene el envío de cookies en solicitudes de sitios cruzados
+                options.LoginPath = "/Account/Login";
+                options.AccessDeniedPath = "/Account/AccessDenied";
+                options.Cookie.HttpOnly = true;                       // JavaScript no puede leer la cookie
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+                options.SlidingExpiration = true;                     // se renueva si el usuario sigue activo
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // solo por HTTPS
+                options.Cookie.SameSite = SameSiteMode.Lax;
             });
 
             builder.Services.AddScoped<IProductoServices, ProductoService>();
             builder.Services.AddScoped<ICategoriaServices, CategoriaService>();
 
-            // Add services to the container.   
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();
 
-            // Crea los roles si todavía no existen en la base
+            // Carga roles y administrador inicial
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<PaginaDatabaseContext>();
-
-                foreach (var nombreRol in new[] { "Administrador", "Cliente" })
-                {
-                    if (!db.Roles.Any(r => r.Nombre == nombreRol))
-                    {
-                        db.Roles.Add(new Rol { Nombre = nombreRol });
-                    }
-                }
-
-                db.SaveChanges();
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+                DatosIniciales.Cargar(db, app.Configuration, logger);
             }
 
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+
+            // Los nÃºmeros de los formularios se leen siempre con punto decimal (1800.50),
+            // sin importar el idioma de Windows. Los precios se muestran en pesos con Helpers/Formato.
+            app.UseRequestLocalization(new RequestLocalizationOptions
+            {
+                DefaultRequestCulture = new RequestCulture(CultureInfo.InvariantCulture),
+                SupportedCultures = new[] { CultureInfo.InvariantCulture },
+                SupportedUICultures = new[] { CultureInfo.InvariantCulture }
+            });
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
 
-            app.UseAuthentication(); // Habilita la autenticación
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllerRoute(
@@ -81,6 +80,5 @@ options.UseSqlServer(builder.Configuration["ConnectionString:PaginaDBConnection"
 
             app.Run();
         }
-
     }
 }

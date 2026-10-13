@@ -1,159 +1,142 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PaginaWeb.Context;
 using PaginaWeb.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace PaginaWeb.Controllers
 {
+    // Administración del catálogo de discos
     [Authorize(Policy = "AdminOnly")]
-    public class ProductoesController : Controller
+    public class ProductoesController : BaseController
     {
-        private readonly PaginaDatabaseContext _context;
+        public ProductoesController(PaginaDatabaseContext context) : base(context) { }
 
-        public ProductoesController(PaginaDatabaseContext context)
+        public async Task<IActionResult> Index(string? busqueda)
         {
-            _context = context;
-        }
+            var query = _context.Producto.Include(p => p.Categoria).AsQueryable();
 
-        // GET: Productoes
-        public async Task<IActionResult> Index()
-        {
-            return View(await _context.Producto.ToListAsync());
-        }
-
-        // GET: Productoes/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
+            if (!string.IsNullOrWhiteSpace(busqueda))
             {
-                return NotFound();
+                query = query.Where(p => p.Nombre.Contains(busqueda) || p.Artista.Contains(busqueda));
             }
 
-            var producto = await _context.Producto
-                .FirstOrDefaultAsync(m => m.ProductoId == id);
-            if (producto == null)
-            {
-                return NotFound();
-            }
-
-            return View(producto);
+            ViewBag.Busqueda = busqueda;
+            return View(await query.OrderBy(p => p.Artista).ThenBy(p => p.Anio).ToListAsync());
         }
 
-        // GET: Productoes/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View();
+            await CargarGeneros();
+            return View(new Producto { Stock = 1 });
         }
 
-        // POST: Productoes/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nombre,Descripcion,Precio,ImagenUrl,Stock")] Producto producto)
+        public async Task<IActionResult> Create(
+            [Bind("Nombre,Artista,Anio,Descripcion,Precio,ImagenUrl,Stock,CategoriaId,Activo")] Producto producto)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                _context.Add(producto);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                await CargarGeneros(producto.CategoriaId);
+                return View(producto);
             }
-            return View(producto);
+
+            _context.Producto.Add(producto);
+            await _context.SaveChangesAsync();
+            TempData["Mensaje"] = $"Se agregó \"{producto.Nombre}\" al catálogo.";
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: Productoes/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
             var producto = await _context.Producto.FindAsync(id);
             if (producto == null)
             {
                 return NotFound();
             }
+
+            await CargarGeneros(producto.CategoriaId);
             return View(producto);
         }
 
-        // POST: Productoes/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ProductoId,Nombre,Descripcion,Precio,ImagenUrl,Stock")] Producto producto)
+        public async Task<IActionResult> Edit(int id,
+            [Bind("ProductoId,Nombre,Artista,Anio,Descripcion,Precio,ImagenUrl,Stock,CategoriaId,Activo")] Producto producto)
         {
             if (id != producto.ProductoId)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                try
-                {
-                    _context.Update(producto);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ProductoExists(producto.ProductoId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                await CargarGeneros(producto.CategoriaId);
+                return View(producto);
             }
-            return View(producto);
-        }
 
-        // GET: Productoes/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
+            var existente = await _context.Producto.FindAsync(id);
+            if (existente == null)
             {
                 return NotFound();
             }
 
+            // Copiamos solo los campos editables sobre el disco que ya está en la base
+            _context.Entry(existente).CurrentValues.SetValues(producto);
+            await _context.SaveChangesAsync();
+
+            TempData["Mensaje"] = $"Se guardaron los cambios de \"{producto.Nombre}\".";
+            return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> Delete(int id)
+        {
             var producto = await _context.Producto
-                .FirstOrDefaultAsync(m => m.ProductoId == id);
+                .Include(p => p.Categoria)
+                .FirstOrDefaultAsync(p => p.ProductoId == id);
+
             if (producto == null)
             {
                 return NotFound();
             }
 
+            ViewBag.TieneVentas = await _context.PedidoDetalles.AnyAsync(d => d.ProductoId == id);
             return View(producto);
         }
 
-        // POST: Productoes/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var producto = await _context.Producto.FindAsync(id);
-            if (producto != null)
+            if (producto == null)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Si el disco ya se vendió, no lo borramos (romperíamos el historial de pedidos):
+            // lo ocultamos de la tienda.
+            if (await _context.PedidoDetalles.AnyAsync(d => d.ProductoId == id))
+            {
+                producto.Activo = false;
+                TempData["Mensaje"] = $"\"{producto.Nombre}\" tiene ventas, así que se ocultó de la tienda en lugar de borrarse.";
+            }
+            else
             {
                 _context.Producto.Remove(producto);
+                TempData["Mensaje"] = $"Se eliminó \"{producto.Nombre}\".";
             }
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool ProductoExists(int id)
+        private async Task CargarGeneros(int? seleccionado = null)
         {
-            return _context.Producto.Any(e => e.ProductoId == id);
+            var generos = await _context.Categoria.OrderBy(c => c.Nombre).ToListAsync();
+            ViewBag.Generos = new SelectList(generos, "CategoriaId", "Nombre", seleccionado);
         }
     }
 }

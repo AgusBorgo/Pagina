@@ -1,0 +1,46 @@
+@model Producto
+@{
+    // URL a la que volver después de agregar al carrito (la página actual)
+    var volverA = Context.Request.Path + Context.Request.QueryString;
+    bool agotado = Model.Stock < 1;
+}
+
+<article class="disco">
+    <a class="disco__tapa @(agotado ? "disco__tapa--agotado" : "")" asp-controller="Home" asp-action="DetallesProducto" asp-route-id="@Model.ProductoId" tabindex="-1" aria-hidden="true">
+        @if (!string.IsNullOrWhiteSpace(Model.ImagenUrl))
+        {
+            <img src="@Model.ImagenUrl" alt="" loading="lazy" />
+        }
+        else
+        {
+            <span class="sin-tapa"></span>
+        }
+        @if (agotado)
+        {
+            <span class="disco__agotado">Agotado</span>
+        }
+    </a>
+    <div class="disco__info">
+        <p class="disco__meta">@(Model.Anio?.ToString() ?? "s/f") · @(Model.Categoria?.Nombre ?? "CD")</p>
+        <h3 class="disco__nombre">
+            <a asp-controller="Home" asp-action="DetallesProducto" asp-route-id="@Model.ProductoId">@Model.Nombre</a>
+        </h3>
+        <p class="disco__artista">@Model.Artista</p>
+    </div>
+    <div class="disco__pie">
+        <span class="disco__precio">@Formato.Precio(Model.Precio)</span>
+        @if (!agotado)
+        {
+            <form method="post" asp-controller="Home" asp-action="AgregarAlCarrito">
+                <input type="hidden" name="id" value="@Model.ProductoId" />
+                <input type="hidden" name="cantidad" value="1" />
+                <input type="hidden" name="volverA" value="@volverA" />
+                <button type="submit" class="boton boton--acento boton--chico" aria-label="Agregar @Model.Nombre al carrito">Agregar</button>
+            </form>
+        }
+        else
+        {
+            <span class="disco__sin-stock">Sin stock</span>
+        }
+    </div>
+</article>

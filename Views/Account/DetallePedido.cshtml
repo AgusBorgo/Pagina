@@ -1,0 +1,63 @@
+@model Pedido
+@{
+    ViewData["Title"] = $"Pedido #{Model.PedidoId}";
+}
+
+<nav aria-label="Ubicación">
+    <ol class="migas">
+        <li><a asp-action="Historial">Mis pedidos</a></li>
+        <li aria-current="page">Pedido #@Model.PedidoId</li>
+    </ol>
+</nav>
+
+<div class="admin-encabezado">
+    <div>
+        <p class="rotulo">@Formato.FechaHora(Model.FechaPedido)</p>
+        <h1 class="titulo-pagina">Pedido #@Model.PedidoId</h1>
+    </div>
+    <span class="etiqueta @(Model.Estado == "Finalizado" ? "etiqueta--ok" : "")">@Model.Estado</span>
+</div>
+
+<div class="table-responsive">
+    <table class="tabla-simple">
+        <thead>
+            <tr>
+                <th scope="col">Disco</th>
+                <th scope="col" class="num">Precio</th>
+                <th scope="col" class="num">Cantidad</th>
+                <th scope="col" class="num">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var d in Model.PedidoDetalles)
+            {
+                <tr>
+                    <td>
+                        @if (d.Producto != null)
+                        {
+                            <a asp-controller="Home" asp-action="DetallesProducto" asp-route-id="@d.ProductoId"><strong>@d.Producto.Nombre</strong></a>
+                            <div class="text-muted">@d.Producto.Artista</div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Disco no disponible</span>
+                        }
+                    </td>
+                    <td class="num">@Formato.Precio(d.PrecioUnitario)</td>
+                    <td class="num">@d.Cantidad</td>
+                    <td class="num">@Formato.Precio(d.Subtotal)</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3">Total</td>
+                <td class="num">@Formato.Precio(Model.Total)</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<p class="mt-4">
+    <a class="link-flecha" asp-action="Historial"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver a mis pedidos</a>
+</p>

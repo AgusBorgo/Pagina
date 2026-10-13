@@ -1,0 +1,14 @@
+@model Categoria
+<div asp-validation-summary="ModelOnly" class="resumen-errores" role="alert"></div>
+<div style="max-width: 560px;">
+    <div class="campo">
+        <label asp-for="Nombre"></label>
+        <input asp-for="Nombre" placeholder="Ej.: Rock nacional" />
+        <span asp-validation-for="Nombre" class="campo__error"></span>
+    </div>
+    <div class="campo">
+        <label asp-for="Descripcion"></label>
+        <textarea asp-for="Descripcion" rows="3"></textarea>
+        <span asp-validation-for="Descripcion" class="campo__error"></span>
+    </div>
+</div>

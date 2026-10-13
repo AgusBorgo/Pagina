@@ -1,12 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaginaWeb.Context;
-using System.Threading.Tasks;
-using System.Linq;
-using System;
 using PaginaWeb.Models;
-using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
+using PaginaWeb.Models.ViewModel;
 
 namespace PaginaWeb.Controllers
 {
@@ -14,195 +10,114 @@ namespace PaginaWeb.Controllers
     {
         public CarritoController(PaginaDatabaseContext context) : base(context) { }
 
-        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
-            var carritoViewModel = await GetCarritoViewModelAsync();
+            var carrito = await GetCarritoViewModelAsync();
 
-            foreach (var item in carritoViewModel.Items)
+            // Ajustamos las cantidades al stock actual (puede haber cambiado desde que se agregó)
+            foreach (var item in carrito.Items)
             {
-                var producto = await _context.Producto.FindAsync(item.ProductoId);
-                if (producto != null)
+                if (item.Producto != null)
                 {
-                    item.Producto = producto;
-
-                    if (producto.Stock == 0)
-                    {
-                        item.Cantidad = 0;
-                    }
-                    else
-                    {
-                        item.Cantidad = Math.Min(item.Cantidad, producto.Stock);
-                    }
+                    item.Cantidad = Math.Min(item.Cantidad, item.Producto.Stock);
                 }
             }
+            carrito.Total = carrito.Items.Sum(i => i.Subtotal);
 
-            var procederConCompraViewModel = new Models.ViewModel.ProcederConCompraViewModel
-            {
-                Carrito = carritoViewModel,
-            };
-
-            return View(procederConCompraViewModel);
+            return View(new ProcederConCompraViewModel { Carrito = carrito });
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ActualizarCantidad(int productoId, int cantidad)
         {
-            var carritoViewModel = await GetCarritoViewModelAsync();
-            var carritoItem = carritoViewModel.Items.FirstOrDefault(i => i.ProductoId == productoId);
-            if (carritoItem != null)
-            {
-                var producto = await _context.Producto.FindAsync(productoId);
-                if (producto != null)
-                {
-                    carritoItem.Cantidad = Math.Min(cantidad, producto.Stock);
-                }
+            var carrito = await GetCarritoViewModelAsync();
+            var item = carrito.Items.FirstOrDefault(i => i.ProductoId == productoId);
 
-                await UpdateCarritoViewModelAsync(carritoViewModel);
+            if (item?.Producto != null)
+            {
+                item.Cantidad = Math.Clamp(cantidad, 1, Math.Max(1, item.Producto.Stock));
+                await UpdateCarritoViewModelAsync(carrito);
             }
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> EliminarProducto(int productoId)
         {
-            var carritoViewModel = await GetCarritoViewModelAsync();
-            var carritoItem = carritoViewModel.Items.FirstOrDefault(i => i.ProductoId == productoId);
-            if (carritoItem != null)
-            {
-                carritoViewModel.Items.Remove(carritoItem);
-                await UpdateCarritoViewModelAsync(carritoViewModel);
-            }
+            var carrito = await GetCarritoViewModelAsync();
+            carrito.Items.RemoveAll(i => i.ProductoId == productoId);
+            await UpdateCarritoViewModelAsync(carrito);
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(Index));
         }
 
-        public async Task<IActionResult> VaciarCarrito()
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult VaciarCarrito()
         {
-            await RemoveCarritoViewModelAsync();
-            return RedirectToAction("Index");
+            VaciarCookieCarrito();
+            return RedirectToAction(nameof(Index));
         }
 
-        private Task RemoveCarritoViewModelAsync()
-        {
-            Response.Cookies.Delete("Carrito");
-            return Task.CompletedTask;
-        }
-
+        // Para comprar hay que tener sesión: si no, [Authorize] manda al login y después vuelve acá
         [Authorize]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmarCompra()
         {
-
             int usuarioId = ObtenerUsuarioId();
+            var carrito = await GetCarritoViewModelAsync();
 
-            // También intentamos obtener el ID del claim, si existe
-            var userIdClaim = User.FindFirst("UsuarioId")?.Value;
-
-
-            
-            if (usuarioId <= 0)
+            if (carrito.Items.Count == 0)
             {
-                return BadRequest("Error: Usuario no encontrado en la base de datos.");
-            }
-
-            var carritoViewModel = await GetCarritoViewModelAsync();
-
-            if (carritoViewModel.Items.Count == 0)
-            {
-                return BadRequest("Tu carrito está vacío.");
+                TempData["Error"] = "Tu carrito está vacío.";
+                return RedirectToAction(nameof(Index));
             }
 
             var pedido = new Pedido
             {
-                UsuarioId = usuarioId, 
+                UsuarioId = usuarioId,
                 FechaPedido = DateTime.Now,
-                Estado = "Pendiente",
-                Total = 0m,
-                PedidoDetalles = new List<PedidoDetalle>()
+                Estado = "Finalizado",
+                FechaFinalizacion = DateTime.Now
             };
 
-            
-
-            foreach (var item in carritoViewModel.Items)
+            foreach (var item in carrito.Items)
             {
-
-                var producto = await _context.Producto.FindAsync(item.ProductoId);
-                if (producto == null) { 
-                    return NotFound($"Producto con ID {item.ProductoId} no encontrado.");
+                var producto = item.Producto;
+                if (producto == null || !producto.Activo)
+                {
+                    TempData["Error"] = $"El disco \"{item.Nombre}\" ya no está disponible. Quitalo del carrito para continuar.";
+                    return RedirectToAction(nameof(Index));
                 }
 
                 if (producto.Stock < item.Cantidad)
                 {
-                    return BadRequest($"No hay stock suficiente para {producto.Nombre}");
+                    TempData["Error"] = $"No hay stock suficiente de \"{producto.Nombre}\" (quedan {producto.Stock}).";
+                    return RedirectToAction(nameof(Index));
                 }
 
                 producto.Stock -= item.Cantidad;
-                _context.Producto.Update(producto);
 
-                var detalle = new PedidoDetalle
+                pedido.PedidoDetalles.Add(new PedidoDetalle
                 {
                     ProductoId = producto.ProductoId,
                     Cantidad = item.Cantidad,
                     PrecioUnitario = producto.Precio
-                };
-                
-              
-
-                pedido.PedidoDetalles.Add(detalle);
+                });
                 pedido.Total += producto.Precio * item.Cantidad;
-
             }
 
+            // El pedido y la baja de stock se guardan juntos en un solo SaveChanges
+            _context.Pedidos.Add(pedido);
+            await _context.SaveChangesAsync();
 
-            try
-            {
-                _context.Pedidos.Add(pedido);
-                await _context.SaveChangesAsync();
-
-                var pedidoGuardado = await _context.Pedidos.FindAsync(pedido.PedidoId);
-               
-                bool finalizadoOk = await FinalizarPedido(pedido.PedidoId);
-
-                await RemoveCarritoViewModelAsync();
-
-                TempData["mensaje"] = "Confirmación de compra completada.";
-                return RedirectToAction("Index");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Error al procesar la compra: {ex.Message}");
-            }
-        }
-
-        private async Task<bool> FinalizarPedido(int pedidoId)
-        {
-            try
-            {
-                var pedido = await _context.Pedidos.FindAsync(pedidoId);
-                if (pedido == null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"❌ Pedido {pedidoId} no encontrado para finalizar");
-                    return false;
-                }
-
-                System.Diagnostics.Debug.WriteLine($"🔍 Finalizando pedido {pedidoId}, Estado actual: {pedido.Estado}");
-
-                pedido.Estado = "Finalizado";
-                pedido.FechaFinalizacion = DateTime.Now;
-
-                _context.Pedidos.Update(pedido);
-                await _context.SaveChangesAsync();
-
-                System.Diagnostics.Debug.WriteLine($"✅ Pedido {pedidoId} finalizado exitosamente");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ Error al finalizar pedido: {ex.Message}");
-                return false;
-            }
+            VaciarCookieCarrito();
+            TempData["Mensaje"] = $"¡Listo! Tu pedido #{pedido.PedidoId} quedó confirmado.";
+            return RedirectToAction("DetallePedido", "Account", new { id = pedido.PedidoId });
         }
     }
 }

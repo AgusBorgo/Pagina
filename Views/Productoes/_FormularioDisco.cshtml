@@ -1,0 +1,75 @@
+@model Producto
+@* Campos compartidos por "Cargar disco" y "Editar disco" *@
+
+<div asp-validation-summary="ModelOnly" class="resumen-errores" role="alert"></div>
+
+<div class="admin-form">
+    <div>
+        <div class="campo">
+            <label asp-for="Nombre"></label>
+            <input asp-for="Nombre" />
+            <span asp-validation-for="Nombre" class="campo__error"></span>
+        </div>
+
+        <div class="fila-campos">
+            <div class="campo">
+                <label asp-for="Artista"></label>
+                <input asp-for="Artista" />
+                <span asp-validation-for="Artista" class="campo__error"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="Anio"></label>
+                <input asp-for="Anio" type="number" min="1900" max="2100" />
+                <span asp-validation-for="Anio" class="campo__error"></span>
+            </div>
+        </div>
+
+        <div class="campo">
+            <label asp-for="CategoriaId"></label>
+            <select asp-for="CategoriaId" asp-items="ViewBag.Generos">
+                <option value="0">Elegí un género</option>
+            </select>
+            <span asp-validation-for="CategoriaId" class="campo__error"></span>
+            @if (((Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewBag.Generos).Count() == 0)
+            {
+                <div class="campo__ayuda">No hay géneros todavía. <a asp-controller="Categorias" asp-action="Create">Creá uno primero</a>.</div>
+            }
+        </div>
+
+        <div class="fila-campos">
+            <div class="campo">
+                <label asp-for="Precio">Precio (en pesos)</label>
+                <input asp-for="Precio" type="number" step="0.01" min="0" />
+                <span asp-validation-for="Precio" class="campo__error"></span>
+            </div>
+            <div class="campo">
+                <label asp-for="Stock"></label>
+                <input asp-for="Stock" type="number" min="0" />
+                <span asp-validation-for="Stock" class="campo__error"></span>
+            </div>
+        </div>
+
+        <div class="campo">
+            <label asp-for="ImagenUrl"></label>
+            <input asp-for="ImagenUrl" type="url" placeholder="https://..." data-preview-tapa />
+            <div class="campo__ayuda">Pegá el link de una imagen cuadrada de la tapa.</div>
+            <span asp-validation-for="ImagenUrl" class="campo__error"></span>
+        </div>
+
+        <div class="campo">
+            <label asp-for="Descripcion"></label>
+            <textarea asp-for="Descripcion" rows="5"></textarea>
+            <span asp-validation-for="Descripcion" class="campo__error"></span>
+        </div>
+
+        <div class="campo campo--check">
+            <input asp-for="Activo" />
+            <label asp-for="Activo"></label>
+        </div>
+    </div>
+
+    <div class="admin-form__preview" aria-hidden="true">
+        <img id="previewTapa" src="@Model.ImagenUrl" alt="" hidden />
+        <span class="sin-tapa"></span>
+    </div>
+</div>

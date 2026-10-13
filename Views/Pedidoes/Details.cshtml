@@ -1,42 +1,62 @@
-﻿@model PaginaWeb.Models.Pedido
-
+@model Pedido
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = $"Pedido #{Model.PedidoId} · Administración";
 }
 
-<h1>Details</h1>
+<nav aria-label="Ubicación">
+    <ol class="migas">
+        <li><a asp-controller="Dashboard" asp-action="Index">Administración</a></li>
+        <li><a asp-action="Index">Pedidos</a></li>
+        <li aria-current="page">#@Model.PedidoId</li>
+    </ol>
+</nav>
 
-<div>
-    <h4>Pedido</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Usuario)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Usuario.Nombre)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.FechaPedido)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.FechaPedido)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Estado)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Estado)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Total)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Total)
-        </dd>
-    </dl>
+<div class="admin-encabezado">
+    <div>
+        <p class="rotulo">@Formato.FechaHora(Model.FechaPedido)</p>
+        <h1 class="titulo-pagina">Pedido #@Model.PedidoId</h1>
+    </div>
+    <span class="etiqueta @(Model.Estado == "Finalizado" ? "etiqueta--ok" : "")">@Model.Estado</span>
 </div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.PedidoId">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+
+@if (Model.Usuario != null)
+{
+    <div class="metrica mb-4">
+        <span class="metrica__nombre">Cliente</span>
+        <p class="mt-2 mb-1"><strong>@Model.Usuario.Nombre @Model.Usuario.Apellido</strong> · @Model.Usuario.Email · @Model.Usuario.Telefono</p>
+        <p class="mb-0 text-muted">@(string.IsNullOrWhiteSpace(Model.Usuario.Direccion) ? "Sin dirección cargada" : Model.Usuario.Direccion)</p>
+    </div>
+}
+
+<div class="table-responsive">
+    <table class="tabla-simple">
+        <thead>
+            <tr>
+                <th scope="col">Disco</th>
+                <th scope="col" class="num">Precio</th>
+                <th scope="col" class="num">Cantidad</th>
+                <th scope="col" class="num">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var d in Model.PedidoDetalles)
+            {
+                <tr>
+                    <td>
+                        <strong>@(d.Producto?.Nombre ?? "Disco eliminado")</strong>
+                        <div class="text-muted">@d.Producto?.Artista</div>
+                    </td>
+                    <td class="num">@Formato.Precio(d.PrecioUnitario)</td>
+                    <td class="num">@d.Cantidad</td>
+                    <td class="num">@Formato.Precio(d.Subtotal)</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3">Total</td>
+                <td class="num">@Formato.Precio(Model.Total)</td>
+            </tr>
+        </tfoot>
+    </table>
 </div>

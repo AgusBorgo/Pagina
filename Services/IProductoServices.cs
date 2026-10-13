@@ -1,15 +1,16 @@
-﻿using PaginaWeb.Models;
+using PaginaWeb.Models;
 using PaginaWeb.Models.ProductosPaginadosViewModel;
 
 namespace PaginaWeb.Services
 {
     public interface IProductoServices
     {
-        Producto GetProducto(int id);
+        Task<Producto?> GetProducto(int id);
 
-        Task<Producto> GetProductosDestacados();
+        Task<List<Producto>> GetProductosDestacados(int cantidad);
 
-        Task<ProductosPaginadosViewModel> GetProductosPaginados(int? CategoriaId, string? busqueda, int pagina, int
-            productosPorPagina);
+        Task<List<Producto>> GetRelacionados(Producto producto, int cantidad);
+
+        Task<ProductosPaginadosViewModel> GetProductosPaginados(int? categoriaId, string? busqueda, int pagina, int productosPorPagina);
     }
 }

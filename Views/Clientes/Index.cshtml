@@ -1,59 +1,48 @@
-﻿@model IEnumerable<PaginaWeb.Models.Cliente>
-
+@model List<Cliente>
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Usuarios · Administración";
 }
 
-<h1>Index</h1>
+<nav aria-label="Ubicación">
+    <ol class="migas">
+        <li><a asp-controller="Dashboard" asp-action="Index">Administración</a></li>
+        <li aria-current="page">Usuarios</li>
+    </ol>
+</nav>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Nombre)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Apellido)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Email)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Telefono)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Direccion)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Nombre)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Apellido)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Telefono)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Direccion)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.UsuarioId">Edit</a> |
-                    <a asp-action="Details" asp-route-id="@item.UsuarioId">Details</a> |
-                    <a asp-action="Delete" asp-route-id="@item.UsuarioId">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+<h1 class="titulo-pagina">Usuarios</h1>
+
+<div class="table-responsive">
+    <table class="tabla-simple">
+        <thead>
+            <tr>
+                <th scope="col">Nombre</th>
+                <th scope="col">Email</th>
+                <th scope="col">Teléfono</th>
+                <th scope="col">Rol</th>
+                <th scope="col" class="num">Pedidos</th>
+                <th scope="col"><span class="visually-hidden">Acciones</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model)
+            {
+                <tr>
+                    <td><strong>@c.Nombre @c.Apellido</strong></td>
+                    <td>@c.Email</td>
+                    <td>@c.Telefono</td>
+                    <td>
+                        <span class="etiqueta @(c.Rol?.Nombre == "Administrador" ? "etiqueta--acento" : "")">@(c.Rol?.Nombre ?? "Sin rol")</span>
+                    </td>
+                    <td class="num">@c.Pedidos.Count</td>
+                    <td>
+                        <div class="admin-acciones">
+                            <a class="boton-icono" asp-action="Edit" asp-route-id="@c.UsuarioId" aria-label="Cambiar rol de @c.Nombre"><i class="fa-solid fa-user-gear" aria-hidden="true"></i></a>
+                            <a class="boton-icono" asp-action="Delete" asp-route-id="@c.UsuarioId" aria-label="Eliminar a @c.Nombre"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

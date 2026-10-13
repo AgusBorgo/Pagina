@@ -1,38 +1,22 @@
-﻿@model PaginaWeb.Models.Categoria
-
+@model Categoria
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Nuevo género · Administración";
 }
 
-<h1>Create</h1>
+<nav aria-label="Ubicación">
+    <ol class="migas">
+        <li><a asp-controller="Dashboard" asp-action="Index">Administración</a></li>
+        <li><a asp-action="Index">Géneros</a></li>
+        <li aria-current="page">Nuevo</li>
+    </ol>
+</nav>
 
-<h4>Categoria</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Nombre" class="control-label"></label>
-                <input asp-for="Nombre" class="form-control" />
-                <span asp-validation-for="Nombre" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Descripcion" class="control-label"></label>
-                <input asp-for="Descripcion" class="form-control" />
-                <span asp-validation-for="Descripcion" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+<h1 class="titulo-pagina">Nuevo género</h1>
+
+<form asp-action="Create" method="post" novalidate>
+    <partial name="_FormularioGenero" model="Model" />
+    <div class="admin-form__botones">
+        <button type="submit" class="boton boton--acento">Crear género</button>
+        <a class="boton boton--borde" asp-action="Index">Cancelar</a>
     </div>
-</div>
-
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+</form>

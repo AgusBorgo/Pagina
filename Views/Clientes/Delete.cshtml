@@ -1,51 +1,24 @@
-﻿@model PaginaWeb.Models.Cliente
-
+@model Cliente
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Eliminar usuario · Administración";
+    int pedidos = Model.Pedidos.Count;
 }
 
-<h1>Delete</h1>
+<div class="cuenta__caja" style="max-width: 640px;">
+    <p class="rotulo">Confirmar</p>
+    <h1 class="titulo-pagina">¿Eliminar a @Model.Nombre @Model.Apellido?</h1>
+    <p>@Model.Email · @(Model.Rol?.Nombre ?? "Sin rol")</p>
 
-<h3>Are you sure you want to delete this?</h3>
-<div>
-    <h4>Cliente</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Nombre)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Nombre)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Apellido)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Apellido)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Email)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Email)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Telefono)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Telefono)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Direccion)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Direccion)
-        </dd>
-    </dl>
-    
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="UsuarioId" />
-        <input type="submit" value="Delete" class="btn btn-danger" /> |
-        <a asp-action="Index">Back to List</a>
+    @if (pedidos > 0)
+    {
+        <div class="aviso aviso--error">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <span>Este usuario tiene @pedidos @(pedidos == 1 ? "pedido" : "pedidos"), que también se van a eliminar.</span>
+        </div>
+    }
+
+    <form asp-action="Delete" asp-route-id="@Model.UsuarioId" method="post" class="admin-form__botones">
+        <button type="submit" class="boton boton--peligro">Eliminar usuario</button>
+        <a class="boton boton--borde" asp-action="Index">Cancelar</a>
     </form>
 </div>

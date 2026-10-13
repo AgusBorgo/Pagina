@@ -1,98 +1,115 @@
-﻿@model PaginaWeb.Models.ViewModel.ProcederConCompraViewModel
-
-
+@model ProcederConCompraViewModel
 @{
-    ViewData["Title"] = "Carrito de Compras";
+    ViewData["Title"] = "Carrito";
+    var items = Model.Carrito.Items;
+    bool logueado = User.Identity?.IsAuthenticated ?? false;
+    bool hayFaltantes = items.Any(i => i.Producto == null || i.Producto.Stock < 1 || !i.Producto.Activo);
+    int unidades = items.Sum(i => i.Cantidad);
 }
 
-<h2>Carrito de compras</h2>
+<p class="rotulo">Tu compra</p>
+<h1 class="titulo-pagina">Carrito</h1>
 
-@if (!Model.Carrito.Items.Any())
+@if (!items.Any())
 {
-    <div class="alert alert-info">
-        <p>No hay productos en el carrito!</p>
-        <a href="@Url.Action("Index", "Home")" class="btn btn-primary">Volver a la tienda</a>
+    <div class="vacio">
+        <p>Tu carrito está vacío.</p>
+        <a class="boton boton--acento" asp-controller="Home" asp-action="Productos">Ir al catálogo</a>
     </div>
 }
 else
 {
-    <div class="table-responsive">
-        <table class="table table-bordered table-striped">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Precio</th>
-                    <th>Total</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model.Carrito.Items)
-                {
-                    if (item.Producto != null)
-                    {
-                        <tr>
-                            <td>@item.Producto.Nombre</td>
-                            <td>
-                                
-                                
-                                    <form asp-action="ActualizarCantidad" asp-controller="Carrito" method="post">
-                                        <div class="input-group input-group-sm">
-                                            <input type="number" name="cantidad" class="form-control" min="1" max="@item.Producto.Stock" value="@item.Cantidad" />
-                                            <div class="input-group-append">
-                                                <button type="submit" class="btn btn-primary">
-                                                    <i class="fas fa-sync-alt"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <input type="hidden" name="productoId" value="@item.Producto.ProductoId" />
-                                    </form>
-                                
-                            </td>
-                            <td>@item.Precio</td>
-                            <td>@item.Subtotal.ToString("C")</td>
-                            <td>
-                                <form asp-action="EliminarProducto" asp-controller="Carrito" method="post">
-                                    <input type="hidden" name="productoId" value="@item.Producto.ProductoId" />
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-trash-alt"></i>
+    <div class="carrito">
+        <ul class="carrito__lista">
+            @foreach (var item in items)
+            {
+                var p = item.Producto;
+                bool sinStock = p == null || p.Stock < 1 || !p.Activo;
+                <li class="carrito__item">
+                    <div class="carrito__tapa">
+                        @if (!string.IsNullOrWhiteSpace(p?.ImagenUrl))
+                        {
+                            <img src="@p.ImagenUrl" alt="" />
+                        }
+                        else
+                        {
+                            <span class="sin-tapa"></span>
+                        }
+                    </div>
+                    <div>
+                        <p class="carrito__nombre">
+                            <a asp-controller="Home" asp-action="DetallesProducto" asp-route-id="@item.ProductoId">@item.Nombre</a>
+                        </p>
+                        <p class="carrito__detalle">
+                            @(p?.Artista) · @Formato.Precio(item.Precio) c/u
+                            @if (sinStock)
+                            {
+                                <span class="etiqueta etiqueta--acento ms-1">Sin stock</span>
+                            }
+                        </p>
+                        <div class="carrito__acciones">
+                            @if (!sinStock)
+                            {
+                                <form asp-action="ActualizarCantidad" method="post">
+                                    <input type="hidden" name="productoId" value="@item.ProductoId" />
+                                    <label for="cant-@item.ProductoId" class="visually-hidden">Cantidad de @item.Nombre</label>
+                                    <input id="cant-@item.ProductoId" class="entrada" type="number" name="cantidad"
+                                           min="1" max="@(p!.Stock)" value="@item.Cantidad" />
+                                    <button type="submit" class="boton-icono" aria-label="Actualizar cantidad de @item.Nombre">
+                                        <i class="fa-solid fa-rotate" aria-hidden="true"></i>
                                     </button>
                                 </form>
-                            </td>
-                        </tr>
-                    }
-                }
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="3" class="text-end font-weight-bold">Total:</td>
-                    <td colspan="2" class="font-weight-bold">@Model.Carrito.Total.ToString("C")</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+                            }
+                            <form asp-action="EliminarProducto" method="post">
+                                <input type="hidden" name="productoId" value="@item.ProductoId" />
+                                <button type="submit" class="boton-icono" aria-label="Quitar @item.Nombre del carrito">
+                                    <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <span class="carrito__subtotal">@Formato.Precio(item.Subtotal)</span>
+                </li>
+            }
+        </ul>
 
-    <div class="text-right">
-        <form asp-controller="Carrito" asp-action="VaciarCarrito" method="post">
-            <button type="submit" class="btn btn-danger">
-                <i class="fas fa-trash-alt"></i> Vaciar carrito
-            </button>
-        </form>
-    </div>
-    <div class="text-right">
-        <form asp-controller="Carrito" asp-action="ConfirmarCompra" method="post">
-            @if (TempData["mensaje"] != null)
+        <aside class="resumen" aria-label="Resumen de la compra">
+            <h2>Resumen</h2>
+            <div class="resumen__fila">
+                <span>@unidades @(unidades == 1 ? "disco" : "discos")</span>
+                <span>@Formato.Precio(Model.Carrito.Total)</span>
+            </div>
+            <div class="resumen__fila">
+                <span>Envío</span>
+                <span>A coordinar</span>
+            </div>
+            <div class="resumen__total">
+                <span>Total</span>
+                <span>@Formato.Precio(Model.Carrito.Total)</span>
+            </div>
+
+            @if (hayFaltantes)
             {
-                <div class="alert alert-info">
-                    @TempData["mensaje"]
-                </div>
+                <button type="button" class="boton boton--acento boton--ancho" disabled>Confirmar compra</button>
+                <p class="resumen__nota">Quitá los discos sin stock para poder confirmar.</p>
+            }
+            else if (logueado)
+            {
+                <form asp-action="ConfirmarCompra" method="post">
+                    <button type="submit" class="boton boton--acento boton--ancho">Confirmar compra</button>
+                </form>
+            }
+            else
+            {
+                <a class="boton boton--acento boton--ancho" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Index", "Carrito")">
+                    Iniciá sesión para comprar
+                </a>
+                <p class="resumen__nota">¿No tenés cuenta? <a asp-controller="Account" asp-action="Register">Creala en un minuto</a>.</p>
             }
 
-            @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-success">
-                <i class="fas fa-check-circle"></i> Confirmar Compra
-            </button>
-        </form>
+            <form asp-action="VaciarCarrito" method="post" class="mt-3">
+                <button type="submit" class="boton boton--peligro boton--ancho boton--chico">Vaciar carrito</button>
+            </form>
+        </aside>
     </div>
 }

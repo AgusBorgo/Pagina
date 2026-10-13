@@ -1,7 +1,5 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using PaginaWeb.Context;
 using PaginaWeb.Models;
@@ -9,15 +7,19 @@ using PaginaWeb.Models.ViewModel;
 
 namespace PaginaWeb.Controllers
 {
+    // Controlador base: todos los controladores de la tienda heredan de acá
+    // para compartir el acceso a la base y la lógica del carrito.
     public class BaseController : Controller
     {
         protected readonly PaginaDatabaseContext _context;
+        private const string CookieCarrito = "Carrito";
 
         public BaseController(PaginaDatabaseContext context)
         {
             _context = context;
         }
 
+        // Cada vez que se arma una vista, cargamos la cantidad de discos del carrito para el header
         public override ViewResult View(string? viewName, object? model)
         {
             ViewBag.NumeroProductos = GetCarritoCount();
@@ -26,177 +28,121 @@ namespace PaginaWeb.Controllers
 
         protected int GetCarritoCount()
         {
-            int count = 0;
-            string? carritoJson = Request.Cookies["Carrito"];
-
-            if (!string.IsNullOrEmpty(carritoJson))
-            {
-                var carrito = JsonConvert.DeserializeObject<List<ProductoIdAndCantidad>>(carritoJson);
-                if (carrito != null)
-                {
-                    count = carrito.Count;
-                }
-            }
-
-            return count;
+            return LeerCookieCarrito().Sum(i => i.Cantidad);
         }
 
-        public async Task<CarritoViewModel> AgregarProductoAlCarrito(int productoId, int cantidad)
+        private List<ProductoIdAndCantidad> LeerCookieCarrito()
         {
-            var producto = await _context.Producto.FindAsync(productoId);
-
-            if (producto != null)
-            {
-                var carritoViewModel = await GetCarritoViewModelAsync();
-                var carritoItem = carritoViewModel.Items.FirstOrDefault(i => i.ProductoId == productoId);
-
-                if (carritoItem != null)
-                {
-                    carritoItem.Cantidad += cantidad;
-                }
-                else
-                {
-                    carritoViewModel.Items.Add(new CarritoItemViewModel
-                    {
-                        ProductoId = productoId,
-                        Cantidad = cantidad,
-                        Nombre = producto.Nombre,
-                        Precio = producto.Precio
-                    });
-                }
-
-                carritoViewModel.Total = carritoViewModel.Items.Sum(i => i.Precio * i.Cantidad);
-                await UpdateCarritoViewModelAsync(carritoViewModel);
-                return carritoViewModel;
-            }
-
-            // Producto no encontrado
-            return new CarritoViewModel
-            {
-                Items = new List<CarritoItemViewModel>(),
-                Total = 0
-            };
-        }
-
-        public async Task UpdateCarritoViewModelAsync(CarritoViewModel carritoViewModel)
-        {
-            var productoIds = carritoViewModel.Items.Select(item => new ProductoIdAndCantidad
-            {
-                ProductoId = item.ProductoId,
-                Cantidad = item.Cantidad
-            }).ToList();
-
-            var carritoJson = await Task.Run(() => JsonConvert.SerializeObject(productoIds));
-
-            Response.Cookies.Append("Carrito", carritoJson, new CookieOptions
-            {
-                Expires = DateTime.Now.AddDays(7)
-            });
-        }
-
-        public async Task<CarritoViewModel> GetCarritoViewModelAsync()
-        {
-            var carritoJson = Request.Cookies["Carrito"];
-
+            string? carritoJson = Request.Cookies[CookieCarrito];
             if (string.IsNullOrEmpty(carritoJson))
             {
-                return new CarritoViewModel();
+                return new List<ProductoIdAndCantidad>();
             }
 
-            var productoIdsAndCantidades = JsonConvert.DeserializeObject<List<ProductoIdAndCantidad>>(carritoJson);
-            var carritoViewModel = new CarritoViewModel();
-
-            if (productoIdsAndCantidades != null)
+            try
             {
-                foreach (var item in productoIdsAndCantidades)
+                return JsonConvert.DeserializeObject<List<ProductoIdAndCantidad>>(carritoJson)
+                       ?? new List<ProductoIdAndCantidad>();
+            }
+            catch (JsonException)
+            {
+                // Si la cookie está corrupta, empezamos con un carrito vacío
+                return new List<ProductoIdAndCantidad>();
+            }
+        }
+
+        // Suma un disco al carrito sin superar el stock disponible.
+        // Devuelve null si el disco no existe o no tiene stock.
+        public async Task<CarritoViewModel?> AgregarProductoAlCarrito(int productoId, int cantidad)
+        {
+            var producto = await _context.Producto.FindAsync(productoId);
+            if (producto == null || !producto.Activo || producto.Stock < 1 || cantidad < 1)
+            {
+                return null;
+            }
+
+            var carrito = await GetCarritoViewModelAsync();
+            var item = carrito.Items.FirstOrDefault(i => i.ProductoId == productoId);
+
+            if (item != null)
+            {
+                item.Cantidad = Math.Min(item.Cantidad + cantidad, producto.Stock);
+            }
+            else
+            {
+                carrito.Items.Add(new CarritoItemViewModel
                 {
-                    var producto = await _context.Producto.FindAsync(item.ProductoId);
-                    if (producto != null)
+                    ProductoId = productoId,
+                    Producto = producto,
+                    Nombre = producto.Nombre,
+                    Precio = producto.Precio,
+                    Cantidad = Math.Min(cantidad, producto.Stock)
+                });
+            }
+
+            carrito.Total = carrito.Items.Sum(i => i.Subtotal);
+            await UpdateCarritoViewModelAsync(carrito);
+            return carrito;
+        }
+
+        public Task UpdateCarritoViewModelAsync(CarritoViewModel carritoViewModel)
+        {
+            var items = carritoViewModel.Items
+                .Where(i => i.Cantidad > 0)
+                .Select(i => new ProductoIdAndCantidad { ProductoId = i.ProductoId, Cantidad = i.Cantidad })
+                .ToList();
+
+            Response.Cookies.Append(CookieCarrito, JsonConvert.SerializeObject(items), new CookieOptions
+            {
+                Expires = DateTimeOffset.Now.AddDays(7),
+                HttpOnly = true,
+                IsEssential = true,
+                SameSite = SameSiteMode.Lax
+            });
+
+            return Task.CompletedTask;
+        }
+
+        protected void VaciarCookieCarrito()
+        {
+            Response.Cookies.Delete(CookieCarrito);
+        }
+
+        // Arma el carrito completo a partir de la cookie, con datos actualizados de la base
+        public async Task<CarritoViewModel> GetCarritoViewModelAsync()
+        {
+            var carrito = new CarritoViewModel();
+
+            foreach (var item in LeerCookieCarrito())
+            {
+                var producto = await _context.Producto.FindAsync(item.ProductoId);
+                if (producto != null)
+                {
+                    carrito.Items.Add(new CarritoItemViewModel
                     {
-                        carritoViewModel.Items.Add(new CarritoItemViewModel
-                        {
-                            ProductoId = item.ProductoId,
-                            Cantidad = item.Cantidad,
-                            Nombre = producto.Nombre,
-                            Precio = producto.Precio
-                        });
-                    }
+                        ProductoId = item.ProductoId,
+                        Producto = producto,
+                        Nombre = producto.Nombre,
+                        Precio = producto.Precio,
+                        Cantidad = item.Cantidad
+                    });
                 }
             }
 
-            carritoViewModel.Total = carritoViewModel.Items.Sum(i => i.Precio * i.Cantidad);
-            return carritoViewModel;
+            carrito.Total = carrito.Items.Sum(i => i.Subtotal);
+            return carrito;
         }
 
-
+        // Devuelve el id del usuario logueado (0 si no hay sesión)
         protected int ObtenerUsuarioId()
         {
-            try
-            {
-                if (!User.Identity.IsAuthenticated)
-                {
-                    return 0;
-                }
-                foreach (var claim in User.Claims)
-                {
-                    System.Diagnostics.Debug.WriteLine($"   - {claim.Type}: {claim.Value}");
-                }
-
-               
-                var usuarioIdClaim = User.FindFirst("UsuarioId");
-                if (usuarioIdClaim == null)
-                {
-                    var alternativeClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                    if (alternativeClaim != null)
-                    {
-                        
-                        if (int.TryParse(alternativeClaim.Value, out int altId))
-                        {
-                            return altId;
-                        }
-                    }
-
-                    return 0;
-                }
-
-                if (int.TryParse(usuarioIdClaim.Value, out int usuarioId))
-                {
-                    return usuarioId;
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-            catch (Exception ex)
+            if (User.Identity?.IsAuthenticated != true)
             {
                 return 0;
             }
+
+            var claim = User.FindFirst("UsuarioId") ?? User.FindFirst(ClaimTypes.NameIdentifier);
+            return int.TryParse(claim?.Value, out int usuarioId) ? usuarioId : 0;
         }
-
-
-        protected int ObtenerUsuarioIdAlternativo()
-        {
-            try
-            {
-                if (!User.Identity.IsAuthenticated)
-                    return 0;
-
-                var claim = User.Claims.FirstOrDefault(c => c.Type == "UsuarioId");
-                if (claim != null && int.TryParse(claim.Value, out int userId))
-                {
-                    return userId;
-                }
-
-                return 0;
-            }
-            catch
-            {
-                return 0;
-            }
-        }
-
-      
     }
 }
-

@@ -1,53 +1,51 @@
-﻿@model IEnumerable<PaginaWeb.Models.Pedido>
-
+@model List<Pedido>
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Pedidos · Administración";
 }
 
-<h1>Index</h1>
+<nav aria-label="Ubicación">
+    <ol class="migas">
+        <li><a asp-controller="Dashboard" asp-action="Index">Administración</a></li>
+        <li aria-current="page">Pedidos</li>
+    </ol>
+</nav>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Usuario)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.FechaPedido)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Estado)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Total)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Usuario.Nombre)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.FechaPedido)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Estado)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Total)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.PedidoId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.PedidoId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.PedidoId">Delete</a>
-            </td>
-        </tr>
+<h1 class="titulo-pagina">Pedidos</h1>
+
+@if (!Model.Any())
+{
+    <p class="vacio">Todavía no hay pedidos.</p>
 }
-    </tbody>
-</table>
+else
+{
+    <div class="table-responsive">
+        <table class="tabla-simple">
+            <thead>
+                <tr>
+                    <th scope="col">Pedido</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col" class="num">Discos</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col" class="num">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td><a asp-action="Details" asp-route-id="@p.PedidoId"><strong>#@p.PedidoId</strong></a></td>
+                        <td>
+                            @(p.Usuario != null ? $"{p.Usuario.Nombre} {p.Usuario.Apellido}" : "—")
+                            <div class="text-muted">@p.Usuario?.Email</div>
+                        </td>
+                        <td>@Formato.FechaHora(p.FechaPedido)</td>
+                        <td class="num">@p.PedidoDetalles.Sum(d => d.Cantidad)</td>
+                        <td><span class="etiqueta @(p.Estado == "Finalizado" ? "etiqueta--ok" : "")">@p.Estado</span></td>
+                        <td class="num">@Formato.Precio(p.Total)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,57 +1,96 @@
-﻿@model PaginaWeb.Models.Producto
-
+@model Producto
 @{
-    ViewData["Title"] = "Detalle del Producto";
+    ViewData["Title"] = $"{Model.Nombre} – {Model.Artista}";
+    var relacionados = ViewBag.Relacionados as List<Producto> ?? new List<Producto>();
+    bool agotado = Model.Stock < 1;
 }
 
-<div class="container">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb" id="breadcrumb-container">
-            <li class="breadcrumb-item"><a href="/">Inicio</a></li>
-            <li class="breadcrumb-item active" aria-current="page">@Model.Nombre</li>
-        </ol>
-    </nav>
+<nav aria-label="Ubicación">
+    <ol class="migas">
+        <li><a asp-action="Index">Inicio</a></li>
+        <li><a asp-action="Productos">Catálogo</a></li>
+        @if (Model.Categoria != null)
+        {
+            <li><a asp-action="Productos" asp-route-categoriaId="@Model.CategoriaId">@Model.Categoria.Nombre</a></li>
+        }
+        <li aria-current="page">@Model.Nombre</li>
+    </ol>
+</nav>
 
-    <h2 class="my-4">@Model.Nombre</h2>
+<div class="detalle">
+    <div class="detalle__tapa">
+        @if (!string.IsNullOrWhiteSpace(Model.ImagenUrl))
+        {
+            <img src="@Model.ImagenUrl" alt="Tapa de @Model.Nombre, de @Model.Artista" />
+        }
+        else
+        {
+            <span class="sin-tapa"></span>
+        }
+    </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            <img class="img-fluid" src="@Model.ImagenUrl" alt="@Model.Nombre" />
-        </div>
-        <div class="col-md-6">
-            <p>@Model.Descripcion</p>
-            <h4>Precio: @String.Format("{0:C}", Model.Precio)</h4>
-            <h5>Categoría: @Model.Categoria?.Nombre</h5>
+    <div>
+        <p class="detalle__artista">@Model.Artista</p>
+        <h1 class="detalle__titulo">@Model.Nombre</h1>
 
-            @if (Model.Stock < 1)
+        <div class="detalle__etiquetas">
+            <span class="etiqueta">CD</span>
+            @if (Model.Anio.HasValue)
             {
-                <div class="alert alert-danger" role="alert">
-                    <i class="fas fa-exclamation-circle"></i> Agotado
-                </div>
+                <span class="etiqueta">@Model.Anio</span>
             }
-
-
-            else
+            @if (Model.Categoria != null)
             {
-                <form method="post" action="@Url.Action("AgregarProductoIndex", "Home")" class="d-flex">
-                    <input type="hidden" name="id" value="@Model.ProductoId" />
-                    <input type="number" class="form-control me-2" name="cantidad" value="1" min="1" max="@Model.Stock" />
-                    <button type="submit" class="btn btn-outline-primary rounded-pill">
-                        <i class="fas fa-cart-plus"></i>
-                    </button>
-                </form>
-
+                <span class="etiqueta">@Model.Categoria.Nombre</span>
             }
         </div>
+
+        <p class="detalle__precio">@Formato.Precio(Model.Precio)</p>
+
+        @if (agotado)
+        {
+            <p class="detalle__stock">Agotado por el momento.</p>
+            <div class="detalle__compra">
+                <button type="button" class="boton boton--borde" disabled>Sin stock</button>
+            </div>
+        }
+        else
+        {
+            <p class="detalle__stock">
+                @(Model.Stock == 1 ? "¡Queda la última unidad!" : $"{Model.Stock} unidades disponibles")
+            </p>
+            <form class="detalle__compra" method="post" asp-action="AgregarAlCarrito">
+                <input type="hidden" name="id" value="@Model.ProductoId" />
+                <input type="hidden" name="volverA" value="@Url.Action("DetallesProducto", new { id = Model.ProductoId })" />
+                <label for="cantidad" class="visually-hidden">Cantidad</label>
+                <input id="cantidad" class="entrada" type="number" name="cantidad" value="1" min="1" max="@Model.Stock" />
+                <button type="submit" class="boton boton--acento">
+                    <i class="fa-solid fa-cart-plus" aria-hidden="true"></i> Agregar al carrito
+                </button>
+            </form>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.Descripcion))
+        {
+            <div class="detalle__descripcion">@Model.Descripcion</div>
+        }
     </div>
 </div>
 
-@{
-    string? controllerName = Context.GetRouteValue("controller") as string;
-    string? actionName = Context.GetRouteValue("action") as string;
+@if (relacionados.Any())
+{
+    <section class="mt-5 pt-5" aria-labelledby="tituloRelacionados">
+        <div class="seccion__encabezado">
+            <div>
+                <p class="rotulo">Seguí escuchando</p>
+                <h2 id="tituloRelacionados" class="seccion__titulo">También te puede gustar</h2>
+            </div>
+        </div>
+        <div class="grilla-discos">
+            @foreach (var disco in relacionados)
+            {
+                <partial name="_TarjetaDisco" model="disco" />
+            }
+        </div>
+    </section>
 }
-
-<script>
-    var controllerName = '@controllerName';
-    var actionName = '@actionName';
-</script>

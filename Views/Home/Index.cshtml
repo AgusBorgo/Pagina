@@ -1,70 +1,109 @@
-﻿@using Microsoft.AspNetCore.Routing
-
-@model List<PaginaWeb.Models.Producto>
+@model List<Producto>
 @{
-    ViewData["Title"] = "Inicio";
+    ViewData["Title"] = "Disquería online de rock nacional";
+    ViewData["FullWidth"] = true;
+    var categorias = ViewBag.Categorias as List<Categoria> ?? new List<Categoria>();
 }
 
-<div class="container">
+<section class="hero">
+    <div class="hero__texto">
+        <p class="rotulo">Disquería online · Rock nacional</p>
+        <h1 class="hero__titulo">Discos para escuchar de punta a punta</h1>
+        <p class="hero__bajada">CDs originales de rock nacional, nuevos y de colección. Elegí, sumá al carrito y seguí tus pedidos desde tu cuenta.</p>
+        <div class="hero__acciones">
+            <a class="boton boton--acento" asp-action="Productos">
+                Ver catálogo <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </a>
+            @if (categorias.Any())
+            {
+                <a class="boton boton--borde" href="#generos">Explorar géneros</a>
+            }
+        </div>
+    </div>
 
-
-    <h2 class="my-4">Productos destacados</h2>
-
-    <div class="row" id="productosContainer">
-        @foreach (var producto in Model)
-        {
-            <div class="col-md-4 col-sm-6 mb-4 productoItem" data-categoria="@producto.Categoria?.Nombre">
-                <div class="card h-100 d-grid">
-                    <a href="@Url.Action("DetallesProducto", "Home", new { id = producto.ProductoId })">
-                        <img class="card-img-top" src="@producto.ImagenUrl" alt="@producto.Nombre" />
-                    </a>
-
-                    <div class="card-body">
-                        @if (producto != null)
-                        {
-                            <h5 class="card-title text-center">
-                                <a href='@Url.Action("DetallesProducto", "Home", new { id = producto.ProductoId })'>
-                                    @producto.Nombre
-                                </a>
-                            </h5>
-                        }
-                        <p class="card-text">@producto.Descripcion</p>
-                    </div>
-
-                    <ul class="list-group list-group-flush text-center">
-                        <li class="list-group-item font-weight-bold">@String.Format("{0:C}", producto.Precio)</li>
-                    </ul>
-
-                    <div class="card-body mt-auto">
-                        @if (producto.Stock < 1)
-                        {
-                            <div class="alert alert-danger" role="alert">
-                                <i class="fas fa-exclamation-circle"></i> Agotado
-                            </div>
-                        }
-                        else
-                        {
-                            <form method="post" action="@Url.Action("AgregarProductoIndex", "Home")" class="d-flex">
-                                <input type="hidden" name="id" value="@producto.ProductoId" />
-                                <input type="number" class="form-control me-2" name="cantidad" value="1" min="1" max="@producto.Stock" />
-                                <button type="submit" class="btn btn-outline-primary rounded-pill">
-                                    <i class="fas fa-cart-plus"></i>
-                                </button>
-                            </form>
-                        }
-                    </div>
+    <div class="hero__cd" aria-hidden="true">
+        <div class="cd">
+            <div class="cd__anillo cd__anillo--1">
+                <div class="cd__anillo cd__anillo--2">
+                    <div class="cd__centro"><div class="cd__agujero"></div></div>
                 </div>
             </div>
+        </div>
+        <div class="librito">
+            <span class="librito__arriba">Selección de la semana</span>
+            <span class="librito__marca">Borgo<br /><span>Discos</span></span>
+            <span class="librito__abajo">CAT. 001 · STEREO</span>
+        </div>
+    </div>
+</section>
+
+@if (categorias.Any())
+{
+    <div class="tira-generos" aria-hidden="true">
+        @foreach (var c in categorias.Take(6))
+        {
+            <span>@c.Nombre</span>
         }
     </div>
-</div>
-
-@{
-    string? controllerName = Context.GetRouteValue("controller") as string;
-    string? actionName = Context.GetRouteValue("action") as string;
 }
 
-<script>
-    var controllerName = '@controllerName';
-    var actionName = '@actionName';
-</script>
+<section class="seccion" aria-labelledby="tituloDestacados">
+    <div class="seccion__encabezado">
+        <div>
+            <p class="rotulo">Lado A</p>
+            <h2 id="tituloDestacados" class="seccion__titulo">Destacados</h2>
+        </div>
+        <a class="link-flecha" asp-action="Productos">Ver todo el catálogo <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <p class="vacio">Todavía no hay discos cargados. Cuando el administrador los agregue, van a aparecer acá.</p>
+    }
+    else
+    {
+        <div class="grilla-discos">
+            @foreach (var disco in Model)
+            {
+                <partial name="_TarjetaDisco" model="disco" />
+            }
+        </div>
+    }
+</section>
+
+@if (categorias.Any())
+{
+    <section id="generos" class="seccion" aria-labelledby="tituloGeneros">
+        <div class="seccion__encabezado">
+            <div>
+                <p class="rotulo">Lado B</p>
+                <h2 id="tituloGeneros" class="seccion__titulo">Explorá por género</h2>
+            </div>
+        </div>
+        <div class="grilla-generos">
+            @for (int i = 0; i < categorias.Count; i++)
+            {
+                var c = categorias[i];
+                var variante = i == 0 ? "genero--papel" : (i == 3 ? "genero--acento" : "");
+                <a class="genero @variante" asp-action="Productos" asp-route-categoriaId="@c.CategoriaId">
+                    <span class="genero__numero">@((i + 1).ToString("00"))</span>
+                    <span class="genero__nombre">@c.Nombre</span>
+                </a>
+            }
+        </div>
+    </section>
+}
+
+<section class="buscador-grande" aria-labelledby="tituloBuscador">
+    <div>
+        <h2 id="tituloBuscador" class="buscador-grande__titulo">¿Buscás un disco en particular?</h2>
+        <p>Buscalo por título o artista en todo el catálogo.</p>
+    </div>
+    <form class="buscador-grande__form campo" asp-action="Productos" method="get" role="search">
+        <label for="busquedaHome">Título o artista</label>
+        <div class="buscador-grande__fila">
+            <input id="busquedaHome" type="search" name="busqueda" placeholder="Ej.: Oktubre" />
+            <button type="submit" class="boton boton--acento">Buscar</button>
+        </div>
+    </form>
+</section>

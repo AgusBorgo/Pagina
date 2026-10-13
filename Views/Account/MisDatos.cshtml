@@ -1,0 +1,56 @@
+@model PerfilViewModel
+@{
+    ViewData["Title"] = "Mis datos";
+}
+
+<div class="cuenta">
+    <div class="cuenta__lado">
+        <p class="rotulo">Tu cuenta</p>
+        <h1 class="titulo-pagina">Mis datos</h1>
+        <p>Mantené actualizados tu teléfono y tu dirección para que podamos coordinar los envíos.</p>
+        <p>
+            <a class="link-flecha" asp-action="Historial">
+                Ver mis pedidos (@Model.CantidadPedidos) <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </a>
+        </p>
+    </div>
+
+    <div class="cuenta__caja">
+        <form asp-action="MisDatos" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="resumen-errores" role="alert"></div>
+
+            <div class="fila-campos">
+                <div class="campo">
+                    <label asp-for="Nombre"></label>
+                    <input asp-for="Nombre" autocomplete="given-name" />
+                    <span asp-validation-for="Nombre" class="campo__error"></span>
+                </div>
+                <div class="campo">
+                    <label asp-for="Apellido"></label>
+                    <input asp-for="Apellido" autocomplete="family-name" />
+                    <span asp-validation-for="Apellido" class="campo__error"></span>
+                </div>
+            </div>
+
+            <div class="campo">
+                <label for="emailPerfil">Email</label>
+                <input id="emailPerfil" type="email" value="@Model.Email" readonly />
+                <div class="campo__ayuda">El email es tu usuario y no se puede cambiar.</div>
+            </div>
+
+            <div class="campo">
+                <label asp-for="Telefono"></label>
+                <input asp-for="Telefono" type="tel" autocomplete="tel" />
+                <span asp-validation-for="Telefono" class="campo__error"></span>
+            </div>
+
+            <div class="campo">
+                <label asp-for="Direccion"></label>
+                <input asp-for="Direccion" autocomplete="street-address" />
+                <span asp-validation-for="Direccion" class="campo__error"></span>
+            </div>
+
+            <button type="submit" class="boton boton--acento boton--ancho">Guardar cambios</button>
+        </form>
+    </div>
+</div>

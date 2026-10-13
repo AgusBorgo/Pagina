@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PaginaWeb.Context;
 using PaginaWeb.Models;
 using PaginaWeb.Models.ProductosPaginadosViewModel;
@@ -8,73 +8,81 @@ namespace PaginaWeb.Services
     public class ProductoService : IProductoServices
     {
         private readonly PaginaDatabaseContext _context;
+
         public ProductoService(PaginaDatabaseContext context)
         {
             _context = context;
         }
-        public Producto GetProducto(int id)
-        {
-            var producto = _context.Producto
-                .Include(p => p.Categoria)
-                .FirstOrDefault(p => p.ProductoId == id);
-            if (producto != null)
-                return producto;
 
-            return new Producto();
+        // Solo los discos visibles en la tienda
+        private IQueryable<Producto> Activos() =>
+            _context.Producto.Include(p => p.Categoria).Where(p => p.Activo);
+
+        public async Task<Producto?> GetProducto(int id)
+        {
+            return await Activos().FirstOrDefaultAsync(p => p.ProductoId == id);
         }
-        public Task<Producto> GetProductosDestacados()
-        {
-            IQueryable<Producto> query = _context.Producto
-                .Include(p => p.Categoria)
-                .Where(p => p.Activo == true)
-                .Take(4);
 
-            return query.FirstOrDefaultAsync();
+        // Destacados: primero los que tienen stock, los más nuevos arriba
+        public async Task<List<Producto>> GetProductosDestacados(int cantidad)
+        {
+            return await Activos()
+                .OrderByDescending(p => p.Stock > 0)
+                .ThenByDescending(p => p.ProductoId)
+                .Take(cantidad)
+                .ToListAsync();
         }
-        public async Task<ProductosPaginadosViewModel> GetProductosPaginados(int? CategoriaId, string? busqueda, int pagina, int productosPorPagina)
+
+        // Otros discos del mismo artista o, si no hay, del mismo género
+        public async Task<List<Producto>> GetRelacionados(Producto producto, int cantidad)
         {
-            IQueryable<Producto> query = _context.Producto
-                .Include(p => p.Categoria)
-                .Where(p => p.Activo == true);
+            return await Activos()
+                .Where(p => p.ProductoId != producto.ProductoId &&
+                            (p.Artista == producto.Artista || p.CategoriaId == producto.CategoriaId))
+                .OrderByDescending(p => p.Artista == producto.Artista)
+                .ThenBy(p => p.Anio)
+                .Take(cantidad)
+                .ToListAsync();
+        }
 
-            if (CategoriaId.HasValue && CategoriaId.Value > 0)
+        public async Task<ProductosPaginadosViewModel> GetProductosPaginados(int? categoriaId, string? busqueda, int pagina, int productosPorPagina)
+        {
+            IQueryable<Producto> query = Activos();
+
+            if (categoriaId.HasValue && categoriaId.Value > 0)
             {
-                query = query.Where(p => p.CategoriaId == CategoriaId.Value);
+                query = query.Where(p => p.CategoriaId == categoriaId.Value);
             }
 
-            if (!string.IsNullOrEmpty(busqueda))
+            if (!string.IsNullOrWhiteSpace(busqueda))
             {
-                query = query.Where(p => p.Nombre.Contains(busqueda) || p.Descripcion.Contains(busqueda));
+                var texto = busqueda.Trim();
+                query = query.Where(p => p.Nombre.Contains(texto) ||
+                                         p.Artista.Contains(texto) ||
+                                         p.Descripcion.Contains(texto));
             }
 
-            List<Producto> products = new List<Producto>();
+            int total = await query.CountAsync();
+            int totalPaginas = Math.Max(1, (int)Math.Ceiling((double)total / productosPorPagina));
+            pagina = Math.Clamp(pagina, 1, totalPaginas);
 
-            if (productosPorPagina > 0)
-            {
-                products = await query
-                    .OrderBy(p => p.Nombre)
-                    .Skip((pagina - 1) * productosPorPagina)
-                    .Take(productosPorPagina)
-                    .ToListAsync();
-            }
-            else
-            {
-                products = await query.ToListAsync();
-            }
+            var productos = await query
+                .OrderBy(p => p.Artista)
+                .ThenBy(p => p.Anio)
+                .ThenBy(p => p.Nombre)
+                .Skip((pagina - 1) * productosPorPagina)
+                .Take(productosPorPagina)
+                .ToListAsync();
 
-            var model = new ProductosPaginadosViewModel
+            return new ProductosPaginadosViewModel
             {
-                Productos = products,
+                Productos = productos,
+                TotalProductos = total,
                 PaginaActual = pagina,
                 ProductosPorPagina = productosPorPagina,
-                TotalProductos = await query.CountAsync(),
-                CategoriaId = CategoriaId,
+                CategoriaId = categoriaId,
                 Busqueda = busqueda
             };
-
-            return model;
         }
-
     }
 }
-

@@ -1,41 +1,52 @@
-﻿@model IEnumerable<PaginaWeb.Models.Categoria>
-
+@model List<Categoria>
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Géneros · Administración";
 }
 
-<h1>Index</h1>
+<nav aria-label="Ubicación">
+    <ol class="migas">
+        <li><a asp-controller="Dashboard" asp-action="Index">Administración</a></li>
+        <li aria-current="page">Géneros</li>
+    </ol>
+</nav>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Nombre)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Descripcion)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Nombre)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Descripcion)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.CategoriaId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.CategoriaId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.CategoriaId">Delete</a>
-            </td>
-        </tr>
+<div class="admin-encabezado">
+    <h1 class="titulo-pagina">Géneros</h1>
+    <a class="boton boton--acento" asp-action="Create"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nuevo género</a>
+</div>
+
+@if (!Model.Any())
+{
+    <p class="vacio">Todavía no hay géneros. Creá al menos uno para poder cargar discos.</p>
 }
-    </tbody>
-</table>
+else
+{
+    <div class="table-responsive">
+        <table class="tabla-simple">
+            <thead>
+                <tr>
+                    <th scope="col">Género</th>
+                    <th scope="col">Descripción</th>
+                    <th scope="col" class="num">Discos</th>
+                    <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td><strong>@c.Nombre</strong></td>
+                        <td class="text-muted">@c.Descripcion</td>
+                        <td class="num">@c.Productos.Count</td>
+                        <td>
+                            <div class="admin-acciones">
+                                <a class="boton-icono" asp-action="Edit" asp-route-id="@c.CategoriaId" aria-label="Editar @c.Nombre"><i class="fa-solid fa-pen" aria-hidden="true"></i></a>
+                                <a class="boton-icono" asp-action="Delete" asp-route-id="@c.CategoriaId" aria-label="Eliminar @c.Nombre"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
